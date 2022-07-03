@@ -32,27 +32,40 @@ class Verena_REST_Notification_Controller {
         register_rest_route( $this->namespace, $this->endpoint , array(
             array(
                 'methods'   => 'GET',
-                'callback'  => array( $this, 'get_account' ),
+                'callback'  => array( $this, 'get_notifications' ),
                 'permission_callback' => array( $this, 'permission_callback' ),
             ),
-            'schema' => array( $this, 'get_account_schema' ),
-        ) );
-
-        register_rest_route( $this->namespace, $this->endpoint , array(
-            array(
-                'methods'   => 'POST',
-                'callback'  => array( $this, 'post_account' ),
-                'permission_callback' => array( $this, 'permission_callback' ),
-            ),
-            'schema' => array( $this, 'post_account_schema' ),
+            'schema' => array( $this, 'get_notifications_schema' ),
         ) );
     }
 
-    public function get_account() {
-        return rest_ensure_response( array() );
-    }
+    public function get_notifications() {
+        global $wpdb;
+        $notification_table = "{$wpdb->prefix}verena_notifications";
 
-    public function post_account() {
-        return rest_ensure_response( array() );
+        $user = wp_get_current_user();
+        $query = $wpdb->prepare("SELECT * FROM {$notification_table} WHERE member_id = %d", $user->ID);
+
+        $notifications = $wpdb->get_results($query, ARRAY_A);
+
+        if(!$notifications) {
+            rest_ensure_response( ["notifications" => []] );
+        }
+
+        $json = [];
+        foreach($notifications as $notification) {
+            $date = new \DateTime($notification['time']);
+            $date->setTimezone(new \DateTimeZone('Europe/Paris'));
+
+            $json[] = array(
+                "id" => (int)$notification['id'],
+                "type" => (int)$notification['notifications_type_id'],
+                "message" => $notification['message'],
+                "url" => $notification['url'],
+                "time" =>  $date->format(\DateTime::W3C),
+            );
+        }
+
+        return rest_ensure_response(["notifications" => $json]);
     }
 }
