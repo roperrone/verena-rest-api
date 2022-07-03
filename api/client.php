@@ -153,8 +153,6 @@ class Verena_REST_Client_Controller {
         );
         $success = $wpdb->query($query);
         return rest_ensure_response(['success' => (boolean)$success]);
-
-        return rest_ensure_response( array() );
     }
 
     public function put_client(\WP_REST_Request $request) {
@@ -207,15 +205,15 @@ class Verena_REST_Client_Controller {
             'posts_per_page'   => -1,
             'post_type'        => 'product',
             'meta_key'         => '_wcfm_product_author',
-            'meta_value'       =>  22,
+            'meta_value'       =>  $member->ID,
         );
         $results = new \WP_Query( $query );
         $products = $results->posts;
 
         foreach($products as $product) {
-            $appointmentIds[] = $product->ID;
+            $consultationsIds[] = $product->ID;
         }
 
-        return $appointmentIds;
+        return $consultationsIds;
     }
 }
