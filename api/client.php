@@ -105,6 +105,9 @@ class Verena_REST_Client_Controller {
 
         $json = [];
         foreach($clients as $client) {
+            $date = new \DateTime($lastAppointmentList[$client['id']]);
+            $date->setTimezone(new \DateTimeZone('Europe/Paris'));
+
             $json[] = array(
                 "clientId" => (int)$client['id'],
                 "name" => $client['firstname']." ".$client['lastname'],
@@ -114,23 +117,89 @@ class Verena_REST_Client_Controller {
                 "phone" => $client['phone'],
                 "address" => $client['address'],
                 "additionalInfos" => $client['additional_infos'],
-                "lastAppointment" => $lastAppointmentList[$client['id']],
+                "lastAppointment" => $date->format(\DateTime::W3C),
                 "countAppointments"=> sizeof(array_filter($clientIds, fn($value, $key) => $value == $client['id'], ARRAY_FILTER_USE_BOTH))
             );
         }
         return rest_ensure_response( ['clients' => $json] );
     }
 
-    public function post_client() {
+    public function post_client(\WP_REST_Request $request) {
+        $data = $request->get_params();
+
+        $validator = new Validator();
+        $validation = $validator->make($data, [
+            "firstname" => 'required',
+            "lastname" => 'required',
+            "email" => 'required|email',
+            "phone" => 'required|numeric',
+            "address" => 'required',
+            "additionalInfos" =>  'required',
+        ]);
+
+        $validation->validate();
+
+        if ($validation->fails()) {
+            $errors = $validation->errors();
+            return new \WP_Error( '400', $errors->firstOfAll(), array( 'status' => 400 ) );
+        }
+
+        global $wpdb;
+        $user = wp_get_current_user();
+
+        $query = $wpdb->prepare("
+            INSERT INTO {$this->client_table} (firstname, lastname, email, phone, address, additional_infos, created_by) 
+            VALUES (%s, %s, %s, %s, %s, %s, %d)", $data['firstname'], $data['lastname'], $data['email'], $data['phone'], $data['address'], $data['additionalInfos'], $user->ID,
+        );
+        $success = $wpdb->query($query);
+        return rest_ensure_response(['success' => (boolean)$success]);
+
         return rest_ensure_response( array() );
     }
 
-    public function put_client() {
-        return rest_ensure_response( array() );
+    public function put_client(\WP_REST_Request $request) {
+        $data = $request->get_params();
+
+        $validator = new Validator();
+        $validation = $validator->make($data, [
+            "clientId" => 'required',
+            "firstname" => 'required',
+            "lastname" => 'required',
+            "email" => 'required|email',
+            "phone" => 'required|numeric',
+            "address" => 'required',
+            "additionalInfos" =>  'required',
+        ]);
+
+        $validation->validate();
+
+        if ($validation->fails()) {
+            $errors = $validation->errors();
+            return new \WP_Error( '400', $errors->firstOfAll(), array( 'status' => 400 ) );
+        }
+
+        global $wpdb;
+        $user = wp_get_current_user();
+
+        $query = $wpdb->prepare("SELECT * FROM {$this->client_table} WHERE created_by = %d AND id = %d", $user->ID, $data['clientId'] );
+        $invoices = $wpdb->get_results($query, ARRAY_A);
+
+        if( empty($invoices) ) {
+            return new \WP_Error( '403', 'This client doesn\'t exist or cannot be updated', array( 'status' => 403 ) );
+        }
+
+        $query = $wpdb->prepare("
+            UPDATE {$this->client_table} 
+            SET firstname = %s, lastname = %s, email = %s, phone = %s, address = %s, additional_infos = %s
+            WHERE id = %d", $data['firstname'], $data['lastname'], $data['email'], $data['phone'], $data['address'], $data['additionalInfos'], $data['clientId'],
+        );
+
+        $success = $wpdb->query($query);
+        return rest_ensure_response(['success' => (boolean)$success]);
     }
 
     public function delete_client() {
-        return rest_ensure_response( array() );
+        return rest_ensure_response( array('Not supported') );
     }
 
     protected function getConsultationsFromMember($member) : array {

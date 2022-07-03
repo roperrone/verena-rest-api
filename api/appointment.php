@@ -22,7 +22,7 @@ class Verena_REST_Appointment_Controller {
    */
     public function permission_callback( $request ) {
         if ( ! current_user_can( 'read' ) ) {
-            return new WP_Error( 'rest_forbidden', esc_html__( 'You cannot view the post resource.' ), array( 'status' => 403 ) );
+            return new \WP_Error( 'rest_forbidden', esc_html__( 'You cannot view the post resource.' ), array( 'status' => 403 ) );
         }
     
         return true;
