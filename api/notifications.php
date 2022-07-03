@@ -35,7 +35,6 @@ class Verena_REST_Notification_Controller {
                 'callback'  => array( $this, 'get_notifications' ),
                 'permission_callback' => array( $this, 'permission_callback' ),
             ),
-            'schema' => array( $this, 'get_notifications_schema' ),
         ) );
     }
 

@@ -28,7 +28,7 @@ class Verena_REST_Invoice_Controller {
    */
     public function permission_callback( $request ) {
         if ( ! current_user_can( 'read' ) ) {
-            return new WP_Error( 'rest_forbidden', esc_html__( 'You cannot view the post resource.' ), array( 'status' => 403 ) );
+            return new \WP_Error( 'rest_forbidden', esc_html__( 'You cannot view the post resource.' ), array( 'status' => 403 ) );
         }
     
         return true;
@@ -41,7 +41,6 @@ class Verena_REST_Invoice_Controller {
                 'callback'  => array( $this, 'get_invoice' ),
                 'permission_callback' => array( $this, 'permission_callback' ),
             ),
-            'schema' => array( $this, 'get_invoice_schema' ),
         ) );
 
         register_rest_route( $this->namespace, $this->endpoint . '/list' , array(
@@ -50,7 +49,6 @@ class Verena_REST_Invoice_Controller {
                 'callback'  => array( $this, 'get_invoice_list' ),
                 'permission_callback' => array( $this, 'permission_callback' ),
             ),
-            'schema' => array( $this, 'get_invoice_schema' ),
         ) );
 
         register_rest_route( $this->namespace, $this->endpoint , array(
@@ -59,7 +57,6 @@ class Verena_REST_Invoice_Controller {
                 'callback'  => array( $this, 'post_invoice' ),
                 'permission_callback' => array( $this, 'permission_callback' ),
             ),
-            'schema' => array( $this, 'post_invoice_schema' ),
         ) );
 
         register_rest_route( $this->namespace, $this->endpoint , array(
@@ -68,7 +65,6 @@ class Verena_REST_Invoice_Controller {
                 'callback'  => array( $this, 'put_invoice' ),
                 'permission_callback' => array( $this, 'permission_callback' ),
             ),
-            'schema' => array( $this, 'put_invoice_schema' ),
         ) );
     }
 

@@ -38,7 +38,6 @@ class Verena_REST_Account_Controller {
                 'callback'  => array( $this, 'get_account' ),
                 'permission_callback' => array( $this, 'permission_callback' ),
             ),
-            'schema' => array( $this, 'get_account_schema' ),
         ) );
 
         register_rest_route( $this->namespace, $this->endpoint , array(
@@ -47,7 +46,6 @@ class Verena_REST_Account_Controller {
                 'callback'  => array( $this, 'post_account' ),
                 'permission_callback' => array( $this, 'permission_callback' ),
             ),
-            'schema' => array( $this, 'post_account_schema' ),
         ) );
     }
 
