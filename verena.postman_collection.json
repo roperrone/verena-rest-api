@@ -1,0 +1,1078 @@
+{
+	"info": {
+		"_postman_id": "a5c56e26-d309-42bb-8b7c-cdb728af2ef2",
+		"name": "Verena",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Auth",
+			"item": [
+				{
+					"name": "Get JWT token",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "username",
+									"value": "{{verena_username}}",
+									"type": "default"
+								},
+								{
+									"key": "password",
+									"value": "{{verena_password}}",
+									"type": "default"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://127.0.0.1/verena/wp-json/jwt-auth/v1/token",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"path": [
+								"",
+								"verena",
+								"wp-json",
+								"jwt-auth",
+								"v1",
+								"token"
+							],
+							"query": [
+								{
+									"key": "",
+									"value": null,
+									"disabled": true
+								},
+								{
+									"key": "",
+									"value": null,
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Account",
+			"item": [
+				{
+					"name": "Get account",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1/verena/wp-json/verena/v1/account",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"path": [
+								"verena",
+								"wp-json",
+								"verena",
+								"v1",
+								"account"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update account",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "firstname",
+									"value": "Augustin",
+									"type": "default"
+								},
+								{
+									"key": "lastname",
+									"value": "Delannoy",
+									"type": "default"
+								},
+								{
+									"key": "birthdate",
+									"value": "1995-12-10",
+									"type": "default"
+								},
+								{
+									"key": "email",
+									"value": "ro.perrone1@gmail.com",
+									"type": "default"
+								},
+								{
+									"key": "phoneNumber",
+									"value": "0645243687",
+									"type": "default"
+								},
+								{
+									"key": "billingAddress",
+									"value": "18 Rue des Archives, Paris, France",
+									"type": "default"
+								},
+								{
+									"key": "siren",
+									"value": "442293775",
+									"type": "default"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://127.0.0.1/verena/wp-json/verena/v1/account",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"path": [
+								"verena",
+								"wp-json",
+								"verena",
+								"v1",
+								"account"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Appointment",
+			"item": [
+				{
+					"name": "Get appointment",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1/verena/wp-json/verena/v1/appointment",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"path": [
+								"verena",
+								"wp-json",
+								"verena",
+								"v1",
+								"appointment"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create appointment",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1/verena/wp-json/verena/v1/appointment?clientId=1&consultationId=2523&timeStart=2022-12-10T13:45:00.000Z&timeEnd=2022-12-10T14:45:00.000Z",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"path": [
+								"verena",
+								"wp-json",
+								"verena",
+								"v1",
+								"appointment"
+							],
+							"query": [
+								{
+									"key": "clientId",
+									"value": "1"
+								},
+								{
+									"key": "consultationId",
+									"value": "2523"
+								},
+								{
+									"key": "timeStart",
+									"value": "2022-12-10T13:45:00.000Z"
+								},
+								{
+									"key": "timeEnd",
+									"value": "2022-12-10T14:45:00.000Z"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update appointment",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1/verena/wp-json/verena/v1/appointment?appointmentId=2541&consultationId=2523&status=confirmed",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"path": [
+								"verena",
+								"wp-json",
+								"verena",
+								"v1",
+								"appointment"
+							],
+							"query": [
+								{
+									"key": "appointmentId",
+									"value": "2541"
+								},
+								{
+									"key": "consultationId",
+									"value": "2523"
+								},
+								{
+									"key": "status",
+									"value": "confirmed"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete appointment",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1/verena/wp-json/verena/v1/appointment?appointmentId=2543",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"path": [
+								"verena",
+								"wp-json",
+								"verena",
+								"v1",
+								"appointment"
+							],
+							"query": [
+								{
+									"key": "appointmentId",
+									"value": "2543"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Client",
+			"item": [
+				{
+					"name": "Get client",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1/verena/wp-json/verena/v1/client",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"path": [
+								"verena",
+								"wp-json",
+								"verena",
+								"v1",
+								"client"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create client",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "firstname",
+									"value": "Romain",
+									"type": "default"
+								},
+								{
+									"key": "lastname",
+									"value": "P.",
+									"type": "default"
+								},
+								{
+									"key": "email",
+									"value": "ro.perrone1@gmail.com",
+									"type": "default"
+								},
+								{
+									"key": "phone",
+									"value": "0645109463",
+									"type": "default"
+								},
+								{
+									"key": "address",
+									"value": "10 Place Abbé Pierre de Porcaro",
+									"type": "default"
+								},
+								{
+									"key": "additionalInfos",
+									"value": "Client fidèle",
+									"type": "default"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://127.0.0.1/verena/wp-json/verena/v1/client",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"path": [
+								"verena",
+								"wp-json",
+								"verena",
+								"v1",
+								"client"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update client",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1/verena/wp-json/verena/v1/client?clientId=55&firstname=Romain&lastname=DDD&email=a@a.fr&phone=0102030405&address=10 Rue des Champs Elysées&additionalInfos=Très bon client",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"path": [
+								"verena",
+								"wp-json",
+								"verena",
+								"v1",
+								"client"
+							],
+							"query": [
+								{
+									"key": "clientId",
+									"value": "55"
+								},
+								{
+									"key": "firstname",
+									"value": "Romain"
+								},
+								{
+									"key": "lastname",
+									"value": "DDD"
+								},
+								{
+									"key": "email",
+									"value": "a@a.fr"
+								},
+								{
+									"key": "phone",
+									"value": "0102030405"
+								},
+								{
+									"key": "address",
+									"value": "10 Rue des Champs Elysées"
+								},
+								{
+									"key": "additionalInfos",
+									"value": "Très bon client"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete client",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1/verena/wp-json/verena/v1/client",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"path": [
+								"verena",
+								"wp-json",
+								"verena",
+								"v1",
+								"client"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Consultation",
+			"item": [
+				{
+					"name": "Get consultation",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1/verena/wp-json/verena/v1/consultation",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"path": [
+								"verena",
+								"wp-json",
+								"verena",
+								"v1",
+								"consultation"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create consultation",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "name",
+									"value": "Consultation Médecine douce",
+									"type": "default"
+								},
+								{
+									"key": "price",
+									"value": "50",
+									"type": "default"
+								},
+								{
+									"key": "duration",
+									"value": "60",
+									"type": "default"
+								},
+								{
+									"key": "location",
+									"value": "13 Avenue de la Bille",
+									"type": "default"
+								},
+								{
+									"key": "description",
+									"value": "Lorem ipsum dolor sit ...",
+									"type": "default"
+								},
+								{
+									"key": "availability",
+									"value": "{\n            \"Mo\": true,\n            \"Tu\": true,\n            \"We\": false,\n            \"Th\": false,\n            \"Fr\": false,\n            \"Sa\": false,\n            \"Su\": false\n}",
+									"type": "default"
+								},
+								{
+									"key": "online",
+									"value": "false",
+									"type": "default"
+								},
+								{
+									"key": "availableFrom",
+									"value": "07:00",
+									"type": "default"
+								},
+								{
+									"key": "availableTo",
+									"value": "18:00",
+									"type": "default"
+								},
+								{
+									"key": "timeInterval",
+									"value": "0",
+									"type": "default"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://127.0.0.1/verena/wp-json/verena/v1/consultation",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"path": [
+								"verena",
+								"wp-json",
+								"verena",
+								"v1",
+								"consultation"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update consultation",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1/verena/wp-json/verena/v1/consultation?consultationId=2542&name=Médecine douce&price=25&duration=30&location=Avenue du Moulin&description=Lorem ipsum&availability={\n            \"Mo\": true,\n            \"Tu\": false,\n            \"We\": true,\n            \"Th\": true,\n            \"Fr\": true,\n            \"Sa\": true,\n            \"Su\": false\n}&online=false&availableFrom=08:00&availableTo=19:30&timeInterval=5",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"path": [
+								"verena",
+								"wp-json",
+								"verena",
+								"v1",
+								"consultation"
+							],
+							"query": [
+								{
+									"key": "consultationId",
+									"value": "2542"
+								},
+								{
+									"key": "name",
+									"value": "Médecine douce"
+								},
+								{
+									"key": "price",
+									"value": "25"
+								},
+								{
+									"key": "duration",
+									"value": "30"
+								},
+								{
+									"key": "location",
+									"value": "Avenue du Moulin"
+								},
+								{
+									"key": "description",
+									"value": "Lorem ipsum"
+								},
+								{
+									"key": "availability",
+									"value": "{\n            \"Mo\": true,\n            \"Tu\": false,\n            \"We\": true,\n            \"Th\": true,\n            \"Fr\": true,\n            \"Sa\": true,\n            \"Su\": false\n}"
+								},
+								{
+									"key": "online",
+									"value": "false"
+								},
+								{
+									"key": "availableFrom",
+									"value": "08:00"
+								},
+								{
+									"key": "availableTo",
+									"value": "19:30"
+								},
+								{
+									"key": "timeInterval",
+									"value": "5"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Delete consultation",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1/verena/wp-json/verena/v1/consultation?consultationId=2544",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"path": [
+								"verena",
+								"wp-json",
+								"verena",
+								"v1",
+								"consultation"
+							],
+							"query": [
+								{
+									"key": "consultationId",
+									"value": "2544"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Invoice",
+			"item": [
+				{
+					"name": "Get invoice",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1/verena/wp-json/verena/v1/invoice?id=1",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"path": [
+								"verena",
+								"wp-json",
+								"verena",
+								"v1",
+								"invoice"
+							],
+							"query": [
+								{
+									"key": "id",
+									"value": "1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get invoice list",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1/verena/wp-json/verena/v1/invoice/list",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"path": [
+								"verena",
+								"wp-json",
+								"verena",
+								"v1",
+								"invoice",
+								"list"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create invoice",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "invoiceId",
+									"value": "1",
+									"type": "default"
+								},
+								{
+									"key": "clientId",
+									"value": "0",
+									"type": "default"
+								},
+								{
+									"key": "consultationId",
+									"value": "0",
+									"type": "default"
+								},
+								{
+									"key": "email",
+									"value": "ro.perrone1@gmail.com",
+									"type": "default"
+								},
+								{
+									"key": "consultationDetails",
+									"value": "Première visite",
+									"type": "default"
+								},
+								{
+									"key": "status",
+									"value": "0",
+									"type": "default"
+								},
+								{
+									"key": "price",
+									"value": "55",
+									"type": "default"
+								},
+								{
+									"key": "time",
+									"value": "2022-07-03 14:48:42",
+									"type": "default"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://127.0.0.1/verena/wp-json/verena/v1/invoice",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"path": [
+								"verena",
+								"wp-json",
+								"verena",
+								"v1",
+								"invoice"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update invoice",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": []
+						},
+						"url": {
+							"raw": "http://127.0.0.1/verena/wp-json/verena/v1/invoice?invoiceId=1&consultationDetails=Première visite&price=51&email=ro.perrone1@gmai.com",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"path": [
+								"verena",
+								"wp-json",
+								"verena",
+								"v1",
+								"invoice"
+							],
+							"query": [
+								{
+									"key": "invoiceId",
+									"value": "1"
+								},
+								{
+									"key": "consultationDetails",
+									"value": "Première visite"
+								},
+								{
+									"key": "price",
+									"value": "51"
+								},
+								{
+									"key": "email",
+									"value": "ro.perrone1@gmai.com"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Notifications",
+			"item": [
+				{
+					"name": "Get notifications",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1/verena/wp-json/verena/v1/notification",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"path": [
+								"verena",
+								"wp-json",
+								"verena",
+								"v1",
+								"notification"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Profile",
+			"item": [
+				{
+					"name": "Get profile",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://127.0.0.1/verena/wp-json/verena/v1/profile",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"path": [
+								"verena",
+								"wp-json",
+								"verena",
+								"v1",
+								"profile"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update profile",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "firstname",
+									"value": "Augustin",
+									"type": "default"
+								},
+								{
+									"key": "lastname",
+									"value": "Delannoy",
+									"type": "default"
+								},
+								{
+									"key": "profession",
+									"value": "Naturopathe, Médecine douce",
+									"type": "default"
+								},
+								{
+									"key": "pageTitle",
+									"value": "Naturopathe, Paris 15e",
+									"type": "default"
+								},
+								{
+									"key": "seoTitle",
+									"value": "Naturopathe à l'écoute de ses patients sur Paris",
+									"type": "default"
+								},
+								{
+									"key": "shortDescription",
+									"value": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer eleifend libero a sem laoreet volutpat. Ut porttitor tincidunt mollis. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; Nunc fermentum quam non gravida ornare. Morbi nec leo quis sapien finibus ultricies",
+									"type": "default"
+								},
+								{
+									"key": "longDescription",
+									"value": "Morbi et fermentum erat. Curabitur vel ultrices metus. Orci varius natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Mauris tincidunt, sapien in mattis malesuada, sem metus volutpat odio, non pellentesque mauris risus at risus. Pellentesque ac metus justo. Cras id magna laoreet, pharetra arcu eu, hendrerit diam. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut convallis nulla vitae magna sagittis auctor ac ut eros. Ut mattis nec massa vitae egestas. Sed vitae luctus odio. Phasellus faucibus, elit at vulputate scelerisque, dolor nibh tincidunt lorem, vel tristique urna est in ipsum.",
+									"type": "default"
+								},
+								{
+									"key": "specialty",
+									"value": "stress, fatigue, insomnie",
+									"type": "default"
+								},
+								{
+									"key": "location",
+									"value": "[{\"address\":\"18 Rue des Archives, Paris, France\",\"additionalInfo\":\"Sonner en arrivant. Se présenter 5 min avant l'heure du rendez-vous.\"}]",
+									"type": "default"
+								},
+								{
+									"key": "cvText",
+									"value": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer eleifend libero a sem laoreet volutpat. Ut porttitor tincidunt mollis. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; Nunc fermentum quam non gravida ornare. Morbi nec leo quis sapien finibus ultricies",
+									"type": "default"
+								},
+								{
+									"key": "thumbnailId",
+									"value": "2525",
+									"type": "default"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://127.0.0.1/verena/wp-json/verena/v1/profile",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"path": [
+								"verena",
+								"wp-json",
+								"verena",
+								"v1",
+								"profile"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Update profile picture",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Disposition",
+								"value": "attachment; filename=\"map2.jpg\"",
+								"type": "default"
+							}
+						],
+						"body": {
+							"mode": "file",
+							"file": {
+								"src": "/C:/Users/Romain/Downloads/profile-pic.png"
+							}
+						},
+						"url": {
+							"raw": "http://127.0.0.1/verena/wp-json/wp/v2/media",
+							"protocol": "http",
+							"host": [
+								"127",
+								"0",
+								"0",
+								"1"
+							],
+							"path": [
+								"verena",
+								"wp-json",
+								"wp",
+								"v2",
+								"media"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOlwvXC8xMjcuMC4wLjFcL3ZlcmVuYSIsImlhdCI6MTY1Njk2MzExNCwibmJmIjoxNjU2OTYzMTE0LCJleHAiOjE2NTc1Njc5MTQsImRhdGEiOnsidXNlciI6eyJpZCI6IjU0In19fQ.4YxZ5KxlD3KFWBlxTFHYFS3C4LcD-WN7UFPO3B_TUSI",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	]
+}
