@@ -10,4 +10,3 @@ CREATE TABLE IF NOT EXISTS `wp_verena_clients` (
   `created_by` bigint(20),
   PRIMARY KEY (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-COMMIT;

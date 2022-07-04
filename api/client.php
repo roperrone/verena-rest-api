@@ -100,7 +100,12 @@ class Verena_REST_Client_Controller {
         // Retrieve the client information
         $clientIdsSQL = implode(',', array_values($clientIds));
 
-        $query = $wpdb->prepare("SELECT DISTINCT * FROM {$this->client_table} WHERE id IN ({$clientIdsSQL})");
+        if( !empty($clientIdsSQL) ) {
+            $query = $wpdb->prepare("SELECT DISTINCT * FROM {$this->client_table} WHERE id IN ({$clientIdsSQL}) OR created_by = %d", $user->ID);
+        } else {
+            $query = $wpdb->prepare("SELECT DISTINCT * FROM {$this->client_table} WHERE created_by = %d", $user->ID);
+        }
+
         $clients = $wpdb->get_results($query, ARRAY_A);
 
         $json = [];
@@ -209,6 +214,8 @@ class Verena_REST_Client_Controller {
         );
         $results = new \WP_Query( $query );
         $products = $results->posts;
+
+        $consultationsIds = [];
 
         foreach($products as $product) {
             $consultationsIds[] = $product->ID;

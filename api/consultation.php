@@ -72,7 +72,7 @@ class Verena_REST_Consultation_Controller {
             'posts_per_page'   => -1,
             'post_type'        => 'product',
             'meta_key'         => '_wcfm_product_author',
-            'meta_value'       =>  22, // TODO: replace with $user->ID
+            'meta_value'       =>  $user->ID,
         );
         $results = new \WP_Query( $query );
         $products = $results->posts;
