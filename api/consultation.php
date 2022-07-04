@@ -288,16 +288,27 @@ class Verena_REST_Consultation_Controller {
 
         $availableData = array_values(json_decode($data['availability'], true));
 
-        for($i = 0; $i <= 7; $i++) {
-            $wc_availability = get_wc_appointments_availability();
-            $wc_availability->set_ordering( $i );
-			$wc_availability->set_range_type( 'time:'.$i );
-			$wc_availability->set_kind( 'availability#product' );
-			$wc_availability->set_kind_id( $product->get_id() );
-            $wc_availability->set_appointable( $availableData[$i - 1] ? 'yes' : 'no' );
-            $wc_availability->set_from_range( $data['availableFrom'] );
-            $wc_availability->set_to_range( $data['availableTo'] ); 
-            $wc_availability->save();
+        // Add availabilities
+        for($i=1; $i<=7; $i++) {
+            $wpdb->insert(
+                $wpdb->prefix . 'wc_appointments_availability',
+                array(
+                    'kind'          => 'availability#product',
+                    'kind_id'       => $product->get_id(),
+                    'title'         => '',
+                    'range_type'    => 'time:'.$i,
+                    'from_range'    => $data['availableFrom'],
+                    'to_range'      => $data['availableTo'],
+                    'from_date'     => '',
+                    'to_date'       => '',
+                    'appointable'   => $availableData[$i - 1] ? 'yes' : 'no',
+                    'priority'      => 10,
+                    'ordering'      => $i - 1,
+                    'rrule'         => '',
+                    'date_created'  => current_time( 'mysql' ),
+                    'date_modified' => current_time( 'mysql' ),
+                )
+            );
         }
 
         return rest_ensure_response(['success' => true]);
