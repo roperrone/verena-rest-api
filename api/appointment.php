@@ -102,7 +102,7 @@ class Verena_REST_Appointment_Controller {
             );
         }
 
-        return rest_ensure_response( $json );
+        return rest_ensure_response( ['appointments' => $json] );
     }
 
     public function post_appointment(\WP_REST_Request $request) {

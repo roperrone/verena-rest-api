@@ -97,8 +97,9 @@ class Verena_REST_Account_Controller {
         update_user_meta( $user->ID, 'siren', $data['siren']);
 
         // update user email
-        wp_update_user( array( 'ID' => $user->ID, 'user_email' => $data['email'] ) );
+        $user_id = wp_update_user( array( 'ID' => $user->ID, 'user_email' => $data['email'] ) );
 
-        return rest_ensure_response( (object)[] );
+        $success = $user_id > 0;
+        return rest_ensure_response( ['success' => $success] );
     }
 }

@@ -85,7 +85,10 @@ class Verena_REST_Profile_Controller {
         $json = array(
             "firstname" => $metadata['first_name'] ?? null,
             "lastname" => $metadata['last_name'] ?? null,
-            "profilePicture" => $profilePicture->guid ?? null,
+            "picture" => array(
+                "id" => $profilePicture->ID,  
+                "uri" => $profilePicture->guid ?? null,
+            ),
             "profession" => $post_meta['profession'] ?? null,
             "pageTitle" => $pageTitle,
             "seoTitle" => $post_meta['seo_title'] ?? null,
@@ -206,8 +209,9 @@ class Verena_REST_Profile_Controller {
         }
 
         // update user email
-        wp_update_user( array( 'ID' => $user->ID, 'user_email' => $data['email'] ) );
+        $user_id = wp_update_user( array( 'ID' => $user->ID, 'user_email' => $data['email'] ) );
 
-        return rest_ensure_response( (object)[] );
+        $success = $user_id > 0;
+        return rest_ensure_response( ['success' => $success] );
     }
 }

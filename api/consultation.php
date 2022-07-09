@@ -129,7 +129,7 @@ class Verena_REST_Consultation_Controller {
             );
         }
 
-        return rest_ensure_response( $json );
+        return rest_ensure_response( ["consultations" => $json] );
     }
 
     public function post_consultation(\WP_REST_Request $request) {

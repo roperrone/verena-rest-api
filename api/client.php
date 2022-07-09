@@ -165,7 +165,7 @@ class Verena_REST_Client_Controller {
 
         $validator = new Validator();
         $validation = $validator->make($data, [
-            "clientId" => 'required',
+            "clientId" => 'required|numeric',
             "firstname" => 'required',
             "lastname" => 'required',
             "email" => 'required|email',
@@ -185,9 +185,9 @@ class Verena_REST_Client_Controller {
         $user = wp_get_current_user();
 
         $query = $wpdb->prepare("SELECT * FROM {$this->client_table} WHERE created_by = %d AND id = %d", $user->ID, $data['clientId'] );
-        $invoices = $wpdb->get_results($query, ARRAY_A);
+        $client = $wpdb->get_results($query, ARRAY_A);
 
-        if( empty($invoices) ) {
+        if( empty($client) ) {
             return new \WP_Error( '403', 'This client doesn\'t exist or cannot be updated', array( 'status' => 403 ) );
         }
 
@@ -201,8 +201,33 @@ class Verena_REST_Client_Controller {
         return rest_ensure_response(['success' => (boolean)$success]);
     }
 
-    public function delete_client() {
-        return rest_ensure_response( array('Not supported') );
+    public function delete_client(\WP_REST_Request $request) {
+        $data = $request->get_params();
+
+        $validator = new Validator();
+        $validation = $validator->make($data, [
+            "clientId" => 'required|numeric',
+        ]);
+
+        $validation->validate();
+
+        if ($validation->fails()) {
+            $errors = $validation->errors();
+            return new \WP_Error( '400', $errors->firstOfAll(), array( 'status' => 400 ) );
+        }
+
+        global $wpdb;
+        $user = wp_get_current_user();
+
+        $query = $wpdb->prepare("SELECT * FROM {$this->client_table} WHERE created_by = %d AND id = %d", $user->ID, $data['clientId'] );
+        $client = $wpdb->get_results($query, ARRAY_A);
+
+        if( empty($client) ) {
+            return new \WP_Error( '403', 'This client doesn\'t exist or cannot be updated', array( 'status' => 403 ) );
+        }
+
+        // TODO: Only allow deletion if no order is attached to this client
+        return rest_ensure_response( ['success' => false] );
     }
 
     protected function getConsultationsFromMember($member) : array {
