@@ -208,10 +208,6 @@ class Verena_REST_Profile_Controller {
             update_post_meta( $post->ID, '_thumbnail_id', (int)$data['thumbnailId']);
         }
 
-        // update user email
-        $user_id = wp_update_user( array( 'ID' => $user->ID, 'user_email' => $data['email'] ) );
-
-        $success = $user_id > 0;
-        return rest_ensure_response( ['success' => $success] );
+        return rest_ensure_response( ['success' => true] );
     }
 }

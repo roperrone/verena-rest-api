@@ -133,25 +133,28 @@ class Verena_REST_Appointment_Controller {
         global $wpdb;
 
         // Check if the client belongs to our user
-        $query = $wpdb->prepare("SELECT * FROM {$wpdb->prefix}verena_clients WHERE created_by = %d AND id = %d LIMIT 1", $user->ID, $data['clientId'] );
-        $client = $wpdb->get_results($query, ARRAY_A);
-
-        if( empty($client) ) {
-            return new \WP_Error( '403', 'Invalid client id', array( 'status' => 403 ) );
+        $client = get_user_by('id', $data['clientId']);
+        
+        if( !$client ) {
+            return new \WP_Error( '404', 'Invalid client id', array( 'status' => 404 ) );
         }
 
-        $client = $client[0];
+        $client_meta = array_map(fn($element) => $element[0], get_user_meta($client->ID));
+        
+        if( !array_key_exists( 'wcfm_vendor_id', $client_meta) || $client_meta['wcfm_vendor_id'] != $user->ID ) {
+            return new \WP_Error( '403', 'Invalid client id', array( 'status' => 403 ) );
+        }
 
         // We first need to create a Woocommerce order
         global $woocommerce;
 
         // Get the client address
         $address = array(
-            'first_name' => $client['firstname'],
-            'last_name'  => $client['lastname'],
-            'email'      => $client['email'],
-            'phone'      => $client['phone'],
-            'address_1'  => $client['address'],
+            'first_name' => $client_meta['first_name'],
+            'last_name'  => $client_meta['last_name'],
+            'email'      => $client_meta['billing_email'],
+            'phone'      => $client_meta['billing_phone'],
+            'address_1'  => $client_meta['billing_address_1'],
         );
       
         $order = wc_create_order();

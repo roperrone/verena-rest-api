@@ -5,6 +5,7 @@ namespace VerenaRestApi;
 require_once __DIR__ . '\..\vendor\autoload.php';
 require_once __DIR__ . '\..\index.php';
 
+use Ramsey\Uuid\Uuid;
 use Rakit\Validation\Validator;
 
 if (!defined("ABSPATH")) {
@@ -71,59 +72,29 @@ class Verena_REST_Client_Controller {
     public function get_client() {
         $user = wp_get_current_user();
 
-        $consultations = $this->getConsultationsFromMember($user);
-        $consultationsIds = implode(',', $consultations);
-
-        global $wpdb;
-
-        // List all appointments
-        $query = $wpdb->prepare("SELECT * FROM {$wpdb->prefix}postmeta WHERE meta_key = %s AND meta_value IN ({$consultationsIds})", '_appointment_product_id');
-        $appointments = $wpdb->get_results($query, ARRAY_A);
-
-        $clientIds = [];
-        $appointmentIds = [];
-        $lastAppointmentList = [];
-
-        // Get the client ids
-        foreach($appointments as $appointment) {
-            $post = get_post($appointment['post_id']);
-            $metadata = get_post_meta($appointment['post_id'], '', '', true);
-
-            $clientIds[$appointment['post_id']] = $metadata['_verena_customer_id'][0];
-
-            if ( array_key_exists($metadata['_verena_customer_id'][0], $lastAppointmentList) )
-                $lastAppointmentList[$metadata['_verena_customer_id'][0]] = $metadata['_appointment_start'][0];
-            else if ( $lastAppointmentList[$metadata['_verena_customer_id'][0]] < $metadata['_appointment_start'][0]) 
-                $lastAppointmentList[$metadata['_verena_customer_id'][0]] = $metadata['_appointment_start'][0];
-        }
-
-        // Retrieve the client information
-        $clientIdsSQL = implode(',', array_values($clientIds));
-
-        if( !empty($clientIdsSQL) ) {
-            $query = $wpdb->prepare("SELECT DISTINCT * FROM {$this->client_table} WHERE id IN ({$clientIdsSQL}) OR created_by = %d", $user->ID);
-        } else {
-            $query = $wpdb->prepare("SELECT DISTINCT * FROM {$this->client_table} WHERE created_by = %d", $user->ID);
-        }
-
-        $clients = $wpdb->get_results($query, ARRAY_A);
+        $clients = get_users(array(
+            'meta_key' => 'wcfm_vendor_id',
+            'meta_value' => $user->ID,
+        ));
 
         $json = [];
         foreach($clients as $client) {
-            $date = new \DateTime($lastAppointmentList[$client['id']]);
+            $client_meta = array_map(fn($element) => $element[0], get_user_meta($client->ID));
+
+            $date = new \DateTime('now');
             $date->setTimezone(new \DateTimeZone('Europe/Paris'));
 
             $json[] = array(
-                "clientId" => (int)$client['id'],
-                "name" => $client['firstname']." ".$client['lastname'],
-                "firstname" => $client['firstname'],
-                "lastname" => $client['lastname'],
-                "email" => $client['email'],
-                "phone" => $client['phone'],
-                "address" => $client['address'],
-                "additionalInfos" => $client['additional_infos'],
+                "clientId" => (int)$client->ID,
+                "name" => $client_meta['first_name']." ".$client_meta['last_name'],
+                "firstname" => $client_meta['first_name'],
+                "lastname" => $client_meta['last_name'],
+                "email" => $client_meta['billing_email'],
+                "phone" => $client_meta['billing_phone'],
+                "address" => $client_meta['billing_address_1'],
+                "additionalInfos" => $client_meta['additional_infos'],
                 "lastAppointment" => $date->format(\DateTime::W3C),
-                "countAppointments"=> sizeof(array_filter($clientIds, fn($value, $key) => $value == $client['id'], ARRAY_FILTER_USE_BOTH))
+                "countAppointments"=> 0,
             );
         }
         return rest_ensure_response( ['clients' => $json] );
@@ -149,15 +120,33 @@ class Verena_REST_Client_Controller {
             return new \WP_Error( '400', $errors->firstOfAll(), array( 'status' => 400 ) );
         }
 
-        global $wpdb;
-        $user = wp_get_current_user();
+        $vendor = wp_get_current_user();
+        $username = Uuid::uuid4()->toString();
 
-        $query = $wpdb->prepare("
-            INSERT INTO {$this->client_table} (firstname, lastname, email, phone, address, additional_infos, created_by) 
-            VALUES (%s, %s, %s, %s, %s, %s, %d)", $data['firstname'], $data['lastname'], $data['email'], $data['phone'], $data['address'], $data['additionalInfos'], $user->ID,
+        // generate a random password
+        $password = bin2hex(openssl_random_pseudo_bytes(10));
+        $user_id = wp_insert_user(
+            array(
+                'user_login' => $username, 
+                'user_pass' => $password,
+                'display_name' => $data['firstname'].' '.$data['lastname'],
+                'nickname' => $data['firstname'].' '.$data['lastname'],
+            )
         );
-        $success = $wpdb->query($query);
-        return rest_ensure_response(['success' => (boolean)$success]);
+
+        // update the account
+        update_user_meta( $user_id, 'first_name', $data['firstname']);
+        update_user_meta( $user_id, 'last_name', $data['lastname']);
+        update_user_meta( $user_id, 'billing_email', $data['email']);
+        update_user_meta( $user_id, 'billing_phone', $data['phone']);
+        update_user_meta( $user_id, 'billing_address_1', $data['address']);
+        update_user_meta( $user_id, 'additional_infos', $data['additionalInfos']);
+        update_user_meta( $user_id, 'hide_admin_area', 1);
+        update_user_meta( $user_id, 'wp_capabilities', ['customer' => true]);
+        update_user_meta( $user_id, 'wcfm_vendor_id', $vendor->ID);    
+
+        $success = $user_id > 0;
+        return rest_ensure_response(['success' => $success]);
     }
 
     public function put_client(\WP_REST_Request $request) {
@@ -181,24 +170,37 @@ class Verena_REST_Client_Controller {
             return new \WP_Error( '400', $errors->firstOfAll(), array( 'status' => 400 ) );
         }
 
-        global $wpdb;
-        $user = wp_get_current_user();
+        $vendor = wp_get_current_user();
+        $client = get_user_by('id', $data['clientId']);
 
-        $query = $wpdb->prepare("SELECT * FROM {$this->client_table} WHERE created_by = %d AND id = %d", $user->ID, $data['clientId'] );
-        $client = $wpdb->get_results($query, ARRAY_A);
-
-        if( empty($client) ) {
+        if( !$client ) {
             return new \WP_Error( '403', 'This client doesn\'t exist or cannot be updated', array( 'status' => 403 ) );
         }
 
-        $query = $wpdb->prepare("
-            UPDATE {$this->client_table} 
-            SET firstname = %s, lastname = %s, email = %s, phone = %s, address = %s, additional_infos = %s
-            WHERE id = %d", $data['firstname'], $data['lastname'], $data['email'], $data['phone'], $data['address'], $data['additionalInfos'], $data['clientId'],
+        $client_meta = array_map(fn($element) => $element[0], get_user_meta($client->ID));
+        
+        if( !array_key_exists( 'wcfm_vendor_id', $client_meta) || $client_meta['wcfm_vendor_id'] != $vendor->ID ) {
+            return new \WP_Error( '403', 'This client doesn\'t exist or cannot be updated', array( 'status' => 403 ) );
+        }
+
+        // update the account
+        update_user_meta( $client->ID, 'first_name', $data['firstname']);
+        update_user_meta( $client->ID, 'last_name', $data['lastname']);
+        update_user_meta( $client->ID, 'billing_email', $data['email']);
+        update_user_meta( $client->ID, 'billing_phone', $data['phone']);
+        update_user_meta( $client->ID, 'billing_address_1', $data['address']);
+        update_user_meta( $client->ID, 'additional_infos', $data['additionalInfos']);
+
+        $user_id = wp_update_user(
+            array(
+                'ID' => $client->ID,
+                'display_name' => $data['firstname'].' '.$data['lastname'],
+                'nickname' => $data['firstname'].' '.$data['lastname'],
+            )
         );
 
-        $success = $wpdb->query($query);
-        return rest_ensure_response(['success' => (boolean)$success]);
+        $success = $user_id > 0;
+        return rest_ensure_response(['success' => $success]);
     }
 
     public function delete_client(\WP_REST_Request $request) {
@@ -216,36 +218,16 @@ class Verena_REST_Client_Controller {
             return new \WP_Error( '400', $errors->firstOfAll(), array( 'status' => 400 ) );
         }
 
-        global $wpdb;
-        $user = wp_get_current_user();
+        $vendor = wp_get_current_user();
+        $client = get_user_by('id', $data['clientId']);
 
-        $query = $wpdb->prepare("SELECT * FROM {$this->client_table} WHERE created_by = %d AND id = %d", $user->ID, $data['clientId'] );
-        $client = $wpdb->get_results($query, ARRAY_A);
-
-        if( empty($client) ) {
+        if( !$client ) {
             return new \WP_Error( '403', 'This client doesn\'t exist or cannot be updated', array( 'status' => 403 ) );
         }
 
+        $success = wp_delete_user($client->ID);
+
         // TODO: Only allow deletion if no order is attached to this client
-        return rest_ensure_response( ['success' => false] );
-    }
-
-    protected function getConsultationsFromMember($member) : array {
-         $query = array(
-            'posts_per_page'   => -1,
-            'post_type'        => 'product',
-            'meta_key'         => '_wcfm_product_author',
-            'meta_value'       =>  $member->ID,
-        );
-        $results = new \WP_Query( $query );
-        $products = $results->posts;
-
-        $consultationsIds = [];
-
-        foreach($products as $product) {
-            $consultationsIds[] = $product->ID;
-        }
-
-        return $consultationsIds;
+        return rest_ensure_response( ['success' => $success] );
     }
 }
