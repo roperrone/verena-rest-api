@@ -3,6 +3,7 @@
 namespace VerenaRestApi;
 
 require_once __DIR__ . '\..\vendor\autoload.php';
+require_once __DIR__ . '\..\helpers\notifications.php';
 require_once __DIR__ . '\..\index.php';
 
 use Ramsey\Uuid\Uuid;
@@ -121,6 +122,9 @@ class Verena_REST_Client_Controller {
         }
 
         $vendor = wp_get_current_user();
+        
+        \Verena_Notifications_Helper::add_notification('Test');
+        
         $username = Uuid::uuid4()->toString();
 
         // generate a random password

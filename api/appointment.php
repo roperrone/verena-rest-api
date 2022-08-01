@@ -91,6 +91,9 @@ class Verena_REST_Appointment_Controller {
             $dateStop->setTimestamp($appointment->get_end(false));
             $dateStop->setTimezone(new \DateTimeZone('Europe/Paris'));
 
+            // Get video conference URL
+            $videoconferenceUrl = get_post_meta($appointment->get_id(), 'google_calendar_event_details', true);
+
             $json[] = array(
                 "appointmentId" => $appointment->get_id(),
                 "clientId" => $appointment->get_customer_id(),
@@ -98,7 +101,7 @@ class Verena_REST_Appointment_Controller {
                 "timeStart" => $dateStart->format(\DateTime::W3C),
                 "timeEnd" => $dateStop->format(\DateTime::W3C),
                 "status" => $appointment->get_status(),
-                "videoconferenceUrl" => "https://zoom.us/ef02ace96", // TODO: update this link
+                "videoconferenceUrl" => $videoconferenceUrl ?? null,
             );
         }
 
@@ -175,7 +178,8 @@ class Verena_REST_Appointment_Controller {
         $appointment->set_start($data['timeStart']);
         $appointment->set_end($data['timeEnd']);
         $appointment->set_product_id($data['consultationId']);
-        $appointment->set_status('pending-confirmation');
+        $appointment->set_status('confirmed');
+        $appointment->set_staff_id($user->ID);
         $appointmentId = $appointment->save();
 
         $success = ($order_id > 0 && $appointmentId > 0);

@@ -24,6 +24,7 @@ class Verena_REST_API_Controller {
       $this->invoice = new \VerenaRestApi\Verena_REST_Invoice_Controller();
       $this->notifications = new \VerenaRestApi\Verena_REST_Notification_Controller();
       $this->profile = new \VerenaRestApi\Verena_REST_Profile_Controller();
+      $this->gcal = new \VerenaRestApi\Verena_REST_Gcal_Controller();
   }
 
   public function register_routes() {
@@ -34,6 +35,7 @@ class Verena_REST_API_Controller {
       $this->invoice->register_routes();
       $this->notifications->register_routes();
       $this->profile->register_routes();
+      $this->gcal->register_routes();
   }
 
   

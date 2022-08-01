@@ -169,7 +169,7 @@ class Verena_REST_Profile_Controller {
         $specialties = explode(', ', $data['specialty']);
 
         foreach($specialties as $specialty) {
-            $specialty = ucfirst(strtolower($specialty));
+            $specialty = ucfirst(mb_convert_case($specialty, MB_CASE_LOWER, "UTF-8"));
             $cat_id = get_cat_ID($specialty);
 
             if($cat_id > 0) {

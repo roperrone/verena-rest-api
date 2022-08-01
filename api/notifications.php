@@ -43,7 +43,7 @@ class Verena_REST_Notification_Controller {
         $notification_table = "{$wpdb->prefix}verena_notifications";
 
         $user = wp_get_current_user();
-        $query = $wpdb->prepare("SELECT * FROM {$notification_table} WHERE member_id = %d", $user->ID);
+        $query = $wpdb->prepare("SELECT * FROM {$notification_table} WHERE member_id = %d ORDER BY time DESC", $user->ID);
 
         $notifications = $wpdb->get_results($query, ARRAY_A);
 
@@ -53,8 +53,7 @@ class Verena_REST_Notification_Controller {
 
         $json = [];
         foreach($notifications as $notification) {
-            $date = new \DateTime($notification['time']);
-            $date->setTimezone(new \DateTimeZone('Europe/Paris'));
+            $date = new \DateTime($notification['time'], new \DateTimeZone('Europe/Paris'));
 
             $json[] = array(
                 "id" => (int)$notification['id'],
