@@ -83,19 +83,19 @@ class Verena_REST_Profile_Controller {
         $profilePicture = get_post($post_meta['_thumbnail_id']);
         
         $json = array(
-            "firstname" => $metadata['first_name'] ?? null,
-            "lastname" => $metadata['last_name'] ?? null,
+            "firstname" => $metadata['first_name'] ?? '',
+            "lastname" => $metadata['last_name'] ?? '',
             "picture" => array(
                 "id" => $profilePicture->ID,  
                 "uri" => $profilePicture->guid ?? null,
             ),
-            "profession" => $post_meta['profession'] ?? null,
+            "profession" => $post_meta['profession'] ?? '',
             "pageTitle" => $pageTitle,
-            "seoTitle" => $post_meta['seo_title'] ?? null,
-            "shortDescription" => $post_meta['short_description'] ?? null,
+            "seoTitle" => $post_meta['seo_title'] ?? '',
+            "shortDescription" => $post_meta['short_description'] ?? '',
             "longDescription" => $longDescription,
-            "specialty" => $specialty,
-            "location" => $post_meta['profile_location'] ? json_decode($post_meta['profile_location']) : null,
+            "specialty" => $specialty ?? '',
+            "location" => $post_meta['profile_location'] ? json_decode($post_meta['profile_location']) : array(array("address" => '')),
             "cvText" =>  $post_meta['cv_text'],
         );
 
