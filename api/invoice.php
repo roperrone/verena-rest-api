@@ -187,8 +187,7 @@ class Verena_REST_Invoice_Controller {
     }
 
     protected function format_invoice($invoice) {
-        $date = new \DateTime($invoice['time']);
-        $date->setTimezone(new \DateTimeZone('Europe/Paris'));
+        $date = new \DateTime($invoice['date'], new \DateTimeZone('Europe/Paris'));
 
         return array(
             "invoiceId" => (int)$invoice['id'],
