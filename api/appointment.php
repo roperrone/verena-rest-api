@@ -183,6 +183,11 @@ class Verena_REST_Appointment_Controller {
         $appointmentId = $appointment->save();
 
         $success = ($order_id > 0 && $appointmentId > 0);
+
+        // Sync to GCal
+        $wc_appointment = wc_appointments_integration_gcal();
+        $wc_appointment->sync_to_gcal( $appointmentId );
+
         return rest_ensure_response(['success' => $success]);
     }
 
