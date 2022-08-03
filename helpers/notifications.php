@@ -1,7 +1,7 @@
 <?php
 class Verena_Notifications_Helper {
 
-    static function add_notification($type_id = 0, $message) {
+    static function add_notification($message, $type_id = 0) {
         global $wpdb;
         $notification_table = "{$wpdb->prefix}verena_notifications";
 

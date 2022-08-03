@@ -2,7 +2,7 @@
 
 namespace VerenaRestApi;
 
-require_once __DIR__ . '\..\index.php';
+require_once __DIR__ . '/../index.php';
 
 if (!defined("ABSPATH")) {
   exit; 

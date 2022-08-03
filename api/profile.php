@@ -2,8 +2,8 @@
 
 namespace VerenaRestApi;
 
-require_once __DIR__ . '\..\vendor\autoload.php';
-require_once __DIR__ . '\..\index.php';
+require_once __DIR__ . '/../vendor/autoload.php';
+require_once __DIR__ . '/../index.php';
 
 use Rakit\Validation\Validator;
 
@@ -76,7 +76,7 @@ class Verena_REST_Profile_Controller {
             foreach($post_categories as $category_id) {
                 $specialty[] = get_cat_name($category_id);
             }
-            $specialty = implode($specialty, ', ');
+            $specialty = implode(', ', $specialty);
             $post_meta = array_map(fn($item) => $item[0], get_post_meta($post->ID));
         }
 

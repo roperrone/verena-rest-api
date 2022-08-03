@@ -2,12 +2,12 @@
 
 namespace VerenaRestApi;
 
-require_once __DIR__ . '\..\vendor\autoload.php';
-require_once __DIR__ . '\..\index.php';
+require_once __DIR__ . '/../vendor/autoload.php';
+require_once __DIR__ . '/../index.php';
 
 use Rakit\Validation\Validator;
 
-require_once __DIR__ . '\..\index.php';
+require_once __DIR__ . '/../index.php';
 
 if (!defined("ABSPATH")) {
   exit; 
@@ -83,13 +83,8 @@ class Verena_REST_Appointment_Controller {
 
         $json = [];
         foreach($appointments as $appointment) {
-            $dateStart = new \DateTime();
-            $dateStart->setTimestamp($appointment->get_start(false));
-            $dateStart->setTimezone(new \DateTimeZone('Europe/Paris'));
-    
-            $dateStop = new \DateTime();
-            $dateStop->setTimestamp($appointment->get_end(false));
-            $dateStop->setTimezone(new \DateTimeZone('Europe/Paris'));
+            $dateStart = new \DateTime('@'.$appointment->get_start(false));
+            $dateStop = new \DateTime('@'.$appointment->get_end(false));
 
             // Get video conference URL
             $videoconferenceUrl = get_post_meta($appointment->get_id(), 'google_calendar_event_details', true);
@@ -98,8 +93,8 @@ class Verena_REST_Appointment_Controller {
                 "appointmentId" => $appointment->get_id(),
                 "clientId" => $appointment->get_customer_id(),
                 "consultationTypeId" => $appointment->get_product_id(),
-                "timeStart" => $dateStart->format(\DateTime::W3C),
-                "timeEnd" => $dateStop->format(\DateTime::W3C),
+                "timeStart" => str_replace('+00:00', '+02:00', $dateStart->format(\DateTime::W3C)),
+                "timeEnd" => str_replace('+00:00', '+02:00', $dateStop->format(\DateTime::W3C)),
                 "status" => $appointment->get_status(),
                 "videoconferenceUrl" => $videoconferenceUrl ?? null,
             );

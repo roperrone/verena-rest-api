@@ -2,8 +2,8 @@
 
 namespace VerenaRestApi;
 
-require_once __DIR__ . '\..\vendor\autoload.php';
-require_once __DIR__ . '\..\index.php';
+require_once __DIR__ . '/../vendor/autoload.php';
+require_once __DIR__ . '/../index.php';
 
 use Rakit\Validation\Validator;
 
@@ -53,7 +53,13 @@ class Verena_REST_Gcal_Controller {
         $user = wp_get_current_user();
 
         $wc_gcal = wc_appointments_integration_gcal();
-        $wc_gcal->set_redirect_after_oauth_uri('http://localhost:3000/account');
+
+        if ($_SERVER['REMOTE_ADDR'] === '127.0.0.1') {
+            $wc_gcal->set_redirect_after_oauth_uri('http://localhost:3000');
+        } else {
+           $wc_gcal->set_redirect_after_oauth_uri('https://praticien.verena.care');
+        } 
+        
         $wc_gcal->set_user_id($user->ID);
 
         $jwt = str_replace('Bearer ', '', $_SERVER['HTTP_AUTHORIZATION']);

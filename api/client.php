@@ -2,9 +2,9 @@
 
 namespace VerenaRestApi;
 
-require_once __DIR__ . '\..\vendor\autoload.php';
-require_once __DIR__ . '\..\helpers\notifications.php';
-require_once __DIR__ . '\..\index.php';
+require_once __DIR__ . '/../vendor/autoload.php';
+require_once __DIR__ . '/../helpers/notifications.php';
+require_once __DIR__ . '/../index.php';
 
 use Ramsey\Uuid\Uuid;
 use Rakit\Validation\Validator;
