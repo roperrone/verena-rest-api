@@ -71,6 +71,7 @@ class Verena_REST_Client_Controller {
     }
 
     public function get_client() {
+        global $wpdb;
         $user = wp_get_current_user();
 
         $clients = get_users(array(
@@ -79,11 +80,31 @@ class Verena_REST_Client_Controller {
         ));
 
         $json = [];
+
         foreach($clients as $client) {
             $client_meta = array_map(fn($element) => $element[0], get_user_meta($client->ID));
 
-            $date = new \DateTime('now');
-            $date->setTimezone(new \DateTimeZone('Europe/Paris'));
+            // List all appointments
+            $query = $wpdb->prepare("SELECT * FROM {$wpdb->prefix}postmeta WHERE meta_key = %s AND meta_value = %d", '_appointment_customer_id', $client->ID);
+            $appointments = $wpdb->get_results($query, ARRAY_A);
+
+            $lastAppointments = null;
+            $countAppointments = 0;
+
+            if($appointments) {                
+                $appointments = array_map(fn($appointment) => get_wc_appointment($appointment['post_id']), $appointments);
+                usort($appointments, function($a, $b) {
+                    if( $a->get_start(false) == $b->get_start(false)) {
+                        return 0;
+                    }
+                    
+                    return ($a->get_start(false) > $b->get_start(false)) ? -1 : 1;
+                });
+
+                $lastAppointments = new \DateTime('@'.$appointments[0]->get_start(false));
+                $lastAppointments = str_replace('+00:00', '+02:00', $lastAppointments->format(\DateTime::W3C));
+                $countAppointments = sizeof($appointments);
+            }
 
             $json[] = array(
                 "clientId" => (int)$client->ID,
@@ -94,8 +115,8 @@ class Verena_REST_Client_Controller {
                 "phone" => $client_meta['billing_phone'],
                 "address" => $client_meta['billing_address_1'],
                 "additionalInfos" => $client_meta['additional_infos'],
-                "lastAppointment" => $date->format(\DateTime::W3C),
-                "countAppointments"=> 0,
+                "lastAppointment" => $lastAppointments,
+                "countAppointments"=> $countAppointments,
             );
         }
         return rest_ensure_response( ['clients' => $json] );
