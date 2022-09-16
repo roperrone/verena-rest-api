@@ -117,6 +117,7 @@ class Verena_REST_Client_Controller {
                 "additionalInfos" => $client_meta['additional_infos'],
                 "lastAppointment" => $lastAppointments,
                 "countAppointments"=> $countAppointments,
+                "deleted" => $client_meta['is_deleted'] ?? false,
             );
         }
         return rest_ensure_response( ['clients' => $json] );
@@ -143,9 +144,7 @@ class Verena_REST_Client_Controller {
         }
 
         $vendor = wp_get_current_user();
-        
-        \Verena_Notifications_Helper::add_notification('Test');
-        
+                
         $username = Uuid::uuid4()->toString();
 
         // generate a random password
@@ -171,6 +170,13 @@ class Verena_REST_Client_Controller {
         update_user_meta( $user_id, 'wcfm_vendor_id', $vendor->ID);    
 
         $success = $user_id > 0;
+
+        if ( $success ) {
+            \Verena_Notifications_Helper::add_notification(
+                sprintf("%s %s. vient d'être ajouté comme client", ucwords($data['firstname']), $data['lastname'][0])
+            );
+        }
+
         return rest_ensure_response(['success' => $success]);
     }
 
@@ -204,7 +210,10 @@ class Verena_REST_Client_Controller {
 
         $client_meta = array_map(fn($element) => $element[0], get_user_meta($client->ID));
         
-        if( !array_key_exists( 'wcfm_vendor_id', $client_meta) || $client_meta['wcfm_vendor_id'] != $vendor->ID ) {
+        if( !array_key_exists( 'wcfm_vendor_id', $client_meta) 
+            || $client_meta['wcfm_vendor_id'] != $vendor->ID 
+            || $client_meta['is_deleted']
+        ) {
             return new \WP_Error( '403', 'This client doesn\'t exist or cannot be updated', array( 'status' => 403 ) );
         }
 
@@ -243,15 +252,21 @@ class Verena_REST_Client_Controller {
             return new \WP_Error( '400', $errors->firstOfAll(), array( 'status' => 400 ) );
         }
 
-        $vendor = wp_get_current_user();
         $client = get_user_by('id', $data['clientId']);
 
         if( !$client ) {
             return new \WP_Error( '403', 'This client doesn\'t exist or cannot be updated', array( 'status' => 403 ) );
         }
 
-        $success = wp_delete_user($client->ID);
+        // update the account
+        $success = update_user_meta( $client->ID, 'is_deleted', true);
 
+        if ($success) {
+            \Verena_Notifications_Helper::add_notification(
+                sprintf("Une fiche client (#%s) vient d'être supprimée", $data['clientId'])
+            );
+        }
+        
         // TODO: Only allow deletion if no order is attached to this client
         return rest_ensure_response( ['success' => $success] );
     }

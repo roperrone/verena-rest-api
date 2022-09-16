@@ -140,9 +140,12 @@ class Verena_REST_Invoice_Controller {
         global $wpdb;
         $user = wp_get_current_user();
 
+        $invoice_number = $wpdb->get_row( $wpdb->prepare( "SELECT MAX(invoice_number) + 1 FROM {$this->invoice_table} WHERE member_id = %d", $user->ID ), ARRAY_A);
+        $invoice_number = array_shift($invoice_number) ?? 1;
+
         $query = $wpdb->prepare("
-            INSERT INTO {$this->invoice_table} (member_id, client_id, consultation_id, email, consultation_details, invoice_status, price, date) 
-            VALUES (%d, %d, %d, %s, %s, %d, %d, %s)", $user->ID, $data['clientId'], $data['consultationId'], $data['email'], $data['consultationDetails'], $data['invoiceStatus'], $data['price'], $data['time'],
+            INSERT INTO {$this->invoice_table} (invoice_number, member_id, client_id, consultation_id, email, consultation_details, invoice_status, price, date) 
+            VALUES (%d, %d, %d, %d, %s, %s, %d, %d, %s)", $invoice_number, $user->ID, $data['clientId'], $data['consultationId'], $data['email'], $data['consultationDetails'], $data['invoiceStatus'], $data['price'], $data['time'],
         );
         $success = $wpdb->query($query);
         return rest_ensure_response(['success' => (boolean)$success]);
@@ -191,6 +194,7 @@ class Verena_REST_Invoice_Controller {
 
         return array(
             "invoiceId" => (int)$invoice['id'],
+            "invoiceNumber" => $invoice['invoice_number'] ? (int)$invoice['invoice_number'] : null,
             "clientId" => (int)$invoice['client_id'],
             "consultationId" => (int)$invoice['consultation_id'],
             "email" => $invoice['email'],

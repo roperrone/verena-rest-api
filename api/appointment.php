@@ -143,9 +143,6 @@ class Verena_REST_Appointment_Controller {
             return new \WP_Error( '403', 'Invalid client id', array( 'status' => 403 ) );
         }
 
-        // We first need to create a Woocommerce order
-        global $woocommerce;
-
         // Get the client address
         $address = array(
             'first_name' => $client_meta['first_name'],
@@ -162,7 +159,7 @@ class Verena_REST_Appointment_Controller {
         
         $order->add_product( $product, 1);
         $order->set_address( $address, 'billing' );
-        $order->set_payment_method('check');//
+        $order->set_payment_method('check');
         $order->calculate_totals();
         $order->update_status('Pending payment', 'Imported order', TRUE);
         $order_id = $order->save();
@@ -170,6 +167,7 @@ class Verena_REST_Appointment_Controller {
         $appointment = new \WC_Appointment();
         $appointment->set_order_id($order_id);
         $appointment->set_customer_id($data['clientId']);
+        $appointment->set_timezone('Europe/Paris');
         $appointment->set_start($data['timeStart']);
         $appointment->set_end($data['timeEnd']);
         $appointment->set_product_id($data['consultationId']);
@@ -182,6 +180,12 @@ class Verena_REST_Appointment_Controller {
         // Sync to GCal
         $wc_appointment = wc_appointments_integration_gcal();
         $wc_appointment->sync_to_gcal( $appointmentId );
+
+        if ($success) {
+            \Verena_Notifications_Helper::add_notification(
+                sprintf("Un nouveau RDV (#%s) vient d'être créé", $appointmentId)
+            );
+        }
 
         return rest_ensure_response(['success' => $success]);
     }
@@ -267,13 +271,25 @@ class Verena_REST_Appointment_Controller {
         }
 
         $consultationId = $appointment->get_product()->get_id();
-
         $consultations = $this->getConsultationsFromMember($user);
+
         if( !in_array($consultationId, $consultations) ) {
             return new \WP_Error( '403', 'You can\'t delete this appointment', array( 'status' => 403 ) );
         }
 
+        // Remove from GCal
+        $wc_appointment = wc_appointments_integration_gcal();
+        $wc_appointment->set_user_id( $user->ID );
+        $wc_appointment->remove_from_gcal( $appointment->ID, $user->ID );
+
         $success = $appointment->delete(true);
+
+        if ($success) {
+            \Verena_Notifications_Helper::add_notification(
+                sprintf("Un RDV (#%s) vient d'être supprimé", $data['appointmentId'])
+            );
+        }
+
         return rest_ensure_response( ['success' => $success] );
     }
 

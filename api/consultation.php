@@ -125,7 +125,8 @@ class Verena_REST_Consultation_Controller {
                 "online" => $metadata['_online'],
                 "availableFrom" => $fromRange,
                 "availableTo" => $toRange,
-                "timeInterval" => $metadata['_wc_appointment_interval']
+                "timeInterval" => $metadata['_wc_appointment_interval'],
+                "deleted" => ($product->post_status === 'archived') ?? false,
             );
         }
 
@@ -335,9 +336,13 @@ class Verena_REST_Consultation_Controller {
             return new \WP_Error( '403', 'The product doesn\'t exist or you don\'t have access to it', array( 'status' => 403 ) );
         }
 
-        $classname = \WC_Product_Factory::get_product_classname( $product->ID, 'appointment');
-        $product   = new $classname( $product->ID );
-        $success = $product->delete(true);
+        // Update the product title and content
+        $success = wp_update_post(
+            array(
+                'ID'            => $product->ID,
+                'post_status'    => 'archived',
+            )
+        );
 
         return rest_ensure_response(['success' => $success]);
     }
