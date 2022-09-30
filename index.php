@@ -64,9 +64,9 @@ add_action( 'rest_api_init', 'verena_register_my_rest_routes' );
  */
 function add_api_cors_headers() {   
     add_filter( 'rest_pre_serve_request', function( $value ) {
-      $origin = ($_SERVER['REMOTE_ADDR'] === '127.0.0.1') ? 'http://localhost:3000' : 'https://praticien.verena.care';
+//      $origin = ($_SERVER['REMOTE_ADDR'] === '127.0.0.1') ? 'http://localhost:3000' : 'https://praticien.verena.care';
       header( 'Access-Control-Allow-Headers: *');
-      header( 'Access-Control-Allow-Origin: ' . $origin );
+      header( 'Access-Control-Allow-Origin: *');
       header( 'Access-Control-Allow-Methods: POST, GET, OPTIONS, PUT, DELETE' );
       header( 'Access-Control-Allow-Credentials: true' );
 

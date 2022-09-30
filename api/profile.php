@@ -68,7 +68,6 @@ class Verena_REST_Profile_Controller {
             $post = $author_post->posts[0];
 
             $pageTitle = $post->post_title;
-            $longDescription = $post->post_content;
 
             $post_categories = wp_get_post_categories($post->ID);
             
@@ -93,7 +92,7 @@ class Verena_REST_Profile_Controller {
             "pageTitle" => $pageTitle,
             "seoTitle" => $post_meta['seo_title'] ?? '',
             "shortDescription" => $post_meta['short_description'] ?? '',
-            "longDescription" => $longDescription,
+            "longDescription" => $post_meta['long_description'] ?? '',
             "specialty" => $specialty ?? '',
             "location" => $post_meta['profile_location'] ? json_decode($post_meta['profile_location']) : array(array("address" => '')),
             "cvText" =>  $post_meta['cv_text'],
@@ -145,14 +144,12 @@ class Verena_REST_Profile_Controller {
             $my_post = array(
                 'ID'           => $post->ID,
                 'post_title'   => $data['pageTitle'],
-                'post_content' => $data['longDescription'],
             );
 
             wp_update_post( $my_post );
         } else {
             $my_post = array(
                 'post_title'   => $data['pageTitle'],
-                'post_content' => $data['longDescription'],
                 'post_status'   => 'pending',
               );
 
@@ -185,6 +182,7 @@ class Verena_REST_Profile_Controller {
         update_post_meta( $post->ID, 'profession', $data['profession']);
         update_post_meta( $post->ID, 'seo_title', $data['seoTitle']);
         update_post_meta( $post->ID, 'short_description', $data['shortDescription']);
+        update_post_meta( $post->ID, 'long_description', $data['longDescription']);
         update_post_meta( $post->ID, 'profile_location', $data['location']);
         update_post_meta( $post->ID, 'cv_text', $data['cvText']);
 
