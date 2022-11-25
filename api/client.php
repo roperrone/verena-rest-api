@@ -131,9 +131,7 @@ class Verena_REST_Client_Controller {
             "firstname" => 'required',
             "lastname" => 'required',
             "email" => 'required|email',
-            "phone" => 'required|numeric',
             "address" => 'required',
-            "additionalInfos" =>  'required',
         ]);
 
         $validation->validate();
@@ -162,9 +160,9 @@ class Verena_REST_Client_Controller {
         update_user_meta( $user_id, 'first_name', $data['firstname']);
         update_user_meta( $user_id, 'last_name', $data['lastname']);
         update_user_meta( $user_id, 'billing_email', $data['email']);
-        update_user_meta( $user_id, 'billing_phone', $data['phone']);
+        update_user_meta( $user_id, 'billing_phone', $data['phone'] ?? '');
         update_user_meta( $user_id, 'billing_address_1', $data['address']);
-        update_user_meta( $user_id, 'additional_infos', $data['additionalInfos']);
+        update_user_meta( $user_id, 'additional_infos', $data['additionalInfos'] ?? '');
         update_user_meta( $user_id, 'hide_admin_area', 1);
         update_user_meta( $user_id, 'wp_capabilities', ['customer' => true]);
         update_user_meta( $user_id, 'wcfm_vendor_id', $vendor->ID);    
@@ -189,9 +187,7 @@ class Verena_REST_Client_Controller {
             "firstname" => 'required',
             "lastname" => 'required',
             "email" => 'required|email',
-            "phone" => 'required|numeric',
             "address" => 'required',
-            "additionalInfos" =>  'required',
         ]);
 
         $validation->validate();
@@ -221,9 +217,9 @@ class Verena_REST_Client_Controller {
         update_user_meta( $client->ID, 'first_name', $data['firstname']);
         update_user_meta( $client->ID, 'last_name', $data['lastname']);
         update_user_meta( $client->ID, 'billing_email', $data['email']);
-        update_user_meta( $client->ID, 'billing_phone', $data['phone']);
+        update_user_meta( $client->ID, 'billing_phone', $data['phone'] ?? '');
         update_user_meta( $client->ID, 'billing_address_1', $data['address']);
-        update_user_meta( $client->ID, 'additional_infos', $data['additionalInfos']);
+        update_user_meta( $client->ID, 'additional_infos', $data['additionalInfos'] ?? '');
 
         $user_id = wp_update_user(
             array(

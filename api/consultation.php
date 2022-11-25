@@ -3,8 +3,10 @@
 namespace VerenaRestApi;
 
 require_once __DIR__ . '/../vendor/autoload.php';
+require_once __DIR__ . '/../helpers/geocoding.php';
 require_once __DIR__ . '/../index.php';
 
+use Rakit\Validation\Rules\Boolean;
 use Rakit\Validation\Validator;
 
 if (!defined("ABSPATH")) {
@@ -112,6 +114,10 @@ class Verena_REST_Consultation_Controller {
                 "price" => $metadata['_price'],
                 "duration" => $metadata['_wc_appointment_duration'],
                 "location" => $metadata['product_address'],
+                "geo" => array(
+                    'lat' => (double)$metadata['_lat'] ?? null,
+                    'lng' => (double)$metadata['_lng'] ?? null,
+                ),
                 "description" => $product->post_content,
                 "availability"=> array(
                     "Mo" => $isAvailable[1],
@@ -122,7 +128,7 @@ class Verena_REST_Consultation_Controller {
                     "Sa" => $isAvailable[6],
                     "Su" => $isAvailable[7],
                 ),
-                "online" => $metadata['_online'],
+                "online" => (bool)$metadata['_online'],
                 "availableFrom" => $fromRange,
                 "availableTo" => $toRange,
                 "timeInterval" => $metadata['_wc_appointment_interval'],
@@ -142,12 +148,11 @@ class Verena_REST_Consultation_Controller {
             "price" => 'required|numeric',
             "duration" => 'required|numeric',
             "location" => 'required',
-            "description" => 'required',
             "availability" => 'required|json',
             "online" => 'required|boolean',
             "availableFrom" =>  'required',
             "availableTo" =>  'required',
-            "timeInterval" =>  'required|numeric',
+            "timeInterval" =>  'numeric',
         ]);
 
         $validation->validate();
@@ -163,13 +168,14 @@ class Verena_REST_Consultation_Controller {
         // Create the product
         $my_post = array(
             'post_title'    => $data['name'],
-            'post_content'  => $data['description'],
+            'post_content'  => $data['description'] ?? '',
             'post_status'   => 'publish',
             'post_type'     => 'product', 
             'post_author'   => $user->ID,
             'meta_input' => array(
                 '_regular_price' => $data['price'],
                 '_price' => $data['price'],
+                '_online' => (bool)$data['online'],
                 '_virtual' => 'yes',
                 '_downloadable' => 'no',
                 '_manage_stock' => 'no',
@@ -195,7 +201,7 @@ class Verena_REST_Consultation_Controller {
 
         $product->set_duration($data['duration']);
         $product->set_duration_unit('minute');
-        $product->set_interval($data['timeInterval']);
+        $product->set_interval($data['timeInterval'] ?? 0);
         $product->set_interval_unit('minute');
         $product->save();
 
@@ -238,12 +244,11 @@ class Verena_REST_Consultation_Controller {
             "price" => 'required|numeric',
             "duration" => 'required|numeric',
             "location" => 'required',
-            "description" => 'required',
             "availability" => 'required|json',
             "online" => 'required|boolean',
             "availableFrom" =>  'required',
             "availableTo" =>  'required',
-            "timeInterval" =>  'required|numeric',
+            "timeInterval" =>  'numeric',
         ]);
 
         $validation->validate();
@@ -263,13 +268,14 @@ class Verena_REST_Consultation_Controller {
             array(
                 'ID'            => $product->ID,
                 'post_title'    => $data['name'],
-                'post_content'  => $data['description']
+                'post_content'  => $data['description'] ?? ''
             )
         );
 
         // Update the product's metadata
         update_post_meta($product->ID, '_regular_price', $data['price']);
         update_post_meta($product->ID, '_price', $data['price']);
+        update_post_meta($product->ID, '_online', (bool)$data['online']);
         update_post_meta($product->ID, 'product_address', $data['location']);
 
         // Update the WC_Product_Appointment options
@@ -278,7 +284,7 @@ class Verena_REST_Consultation_Controller {
 
         $product->set_duration($data['duration']);
         $product->set_duration_unit('minute');
-        $product->set_interval($data['timeInterval']);
+        $product->set_interval($data['timeInterval'] ?? 0);
         $product->set_interval_unit('minute');
         $product->save();
 

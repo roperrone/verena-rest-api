@@ -115,7 +115,7 @@ class Verena_REST_Book_Controller {
         $max_date = \DateTime::createFromFormat('Y-m-d', $data['maxDate'])->settime(0,0)->getTimestamp();
 
         // Calculate partially scheduled/fully scheduled/unavailable days for each product.
-        $scheduled_data = $this->get_available_dates($min_date, $max_date, $member, $products);
+        $scheduled_data = self::get_available_dates($min_date, $max_date, $member, $products);
 
         return rest_ensure_response( $scheduled_data );
     }
@@ -351,7 +351,7 @@ class Verena_REST_Book_Controller {
         $min_date =  \DateTime::createFromFormat('Y-m-d H:i', $date)->getTimestamp();
         $max_date =  \DateTime::createFromFormat('Y-m-d H:i', $date)->modify('+ '. $duration .' minutes')->getTimestamp();
 
-        $scheduled_data = $this->get_available_dates($min_date, $max_date, $vendor, [$product]);
+        $scheduled_data = self::get_available_dates($min_date, $max_date, $vendor, [$product]);
 
         if ( empty($scheduled_data[0]['availability']) ) {
             return new \WP_Error( '404', 'The appointment cannot be booked at this date/time', array( 'status' => 404 ) );
@@ -452,7 +452,7 @@ class Verena_REST_Book_Controller {
      * 
      * @return array $scheduled_data
      */
-    function get_available_dates($min_date, $max_date, $vendor, $products) {
+    static function get_available_dates($min_date, $max_date, $vendor, $products) {
         $scheduled_data = array_values(
 			array_map(
 				function( $appointable_product ) use ( $min_date, $max_date, $staff_ids, $get_past_times, $timezone, $vendor ) {
@@ -520,7 +520,7 @@ class Verena_REST_Book_Controller {
 							unset( $data['staff'] );
 
 							$availability[] = [
-								self::DATE          => $this->get_time( $timestamp, $timezone ),
+								self::DATE          => self::get_time( $timestamp, $timezone ),
 								self::AVAILABLE     => (bool)$data['available']							
                             ];
 						}
@@ -530,7 +530,7 @@ class Verena_REST_Book_Controller {
 						'product_id'    => $appointable_product->get_id(),
 						'product_title' => $appointable_product->get_title(),
                         'location'      => $metadata['product_address'],
-                        'online'        => $metadata['_online'] ?? false,
+                        'online'        => (bool)$metadata['_online'] ?? false,
                         'product_duration' => $duration,
                         'product_duration_unit' => $duration_unit,
                         'price'         => (int)$metadata['_price'],
@@ -554,7 +554,7 @@ class Verena_REST_Book_Controller {
 	 *
 	 * @return string
 	 */
-	public function get_time( $timestamp, $timezone ): string {
+	public static function get_time( $timestamp, $timezone ): string {
 		$server_time = new \DateTime( date( 'Y-m-d\TH:i:s', $timestamp ), $timezone );
 
 		return $server_time->format( "Y-m-d\TH:i" );

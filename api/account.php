@@ -47,6 +47,15 @@ class Verena_REST_Account_Controller {
                 'permission_callback' => array( $this, 'permission_callback' ),
             ),
         ) );
+
+        
+        register_rest_route( $this->namespace, $this->endpoint . '/invoice/settings' , array(
+            array(
+                'methods'   => 'POST',
+                'callback'  => array( $this, 'post_invoice_settings' ),
+                'permission_callback' => array( $this, 'permission_callback' ),
+            ),
+        ) );
     }
 
     public function get_account() {
@@ -61,6 +70,15 @@ class Verena_REST_Account_Controller {
             "phoneNumber" => $metadata['billing_phone'] ?? null,
             "billingAddress" => $metadata['formatted_address'] ?? null,
             "siren" => $metadata['siren'] ?? null,
+            "invoiceSettings" => [
+                "tvaApplicable" => (boolean)$metadata['tva_applicable'] ?? null,
+                "tvaNumber" => $metadata['tva_number'] ?? null,
+                "siret" => $metadata['siret'] ?? null,
+                "adeli" => $metadata['adeli'] ?? null,
+                "paymentMethod" => $metadata['payment_method'] ?? null,
+                "paymentDeadline" => $metadata['payment_deadline'] ?? null,
+                "iban" => $metadata['iban'] ?? null,
+            ]
         );
 
         return rest_ensure_response( $json );
@@ -74,7 +92,7 @@ class Verena_REST_Account_Controller {
         $validation = $validator->make($data, [
             'firstname' => 'required',
             'lastname' => 'required',
-            'birthdate' => 'required|date',
+            'birthdate' => 'date',
             'email' => 'required|email',
             'phoneNumber' => 'required|digits:10',
             'billingAddress' => 'required',
@@ -91,7 +109,7 @@ class Verena_REST_Account_Controller {
         // update the account
         update_user_meta( $user->ID, 'first_name', $data['firstname']);
         update_user_meta( $user->ID, 'last_name', $data['lastname']);
-        update_user_meta( $user->ID, 'birthdate', $data['birthdate']);
+        update_user_meta( $user->ID, 'birthdate', $data['birthdate'] ?? null);
         update_user_meta( $user->ID, 'billing_phone', $data['phoneNumber']);
         update_user_meta( $user->ID, 'formatted_address', $data['billingAddress']);
         update_user_meta( $user->ID, 'siren', $data['siren']);
@@ -102,4 +120,37 @@ class Verena_REST_Account_Controller {
         $success = $user_id > 0;
         return rest_ensure_response( ['success' => $success] );
     }
+
+    public function post_invoice_settings(\WP_REST_Request $request) {
+        $data = $request->get_params();
+
+        $validator = new Validator();
+        $validation = $validator->make($data, [
+            "tvaApplicable" =>  'required',
+            "siret" => 'required',
+            "paymentMethod" => 'required',
+            "paymentDeadline" => 'required',
+        ]);
+
+        $validation->validate();
+
+        if ($validation->fails()) {
+            $errors = $validation->errors();
+            return new \WP_Error( '400', $errors->firstOfAll(), array( 'status' => 400 ) );
+        }
+
+        global $wpdb;
+        $user = wp_get_current_user();
+
+        update_user_meta( $user->ID, 'tva_applicable', $data['tvaApplicable']);
+        update_user_meta( $user->ID, 'tva_number', $data['tvaNumber']);
+        update_user_meta( $user->ID, 'siret', $data['siret']);
+        update_user_meta( $user->ID, 'adeli', $data['adeli']);
+        update_user_meta( $user->ID, 'payment_method', $data['paymentMethod']);
+        update_user_meta( $user->ID, 'payment_deadline', $data['paymentDeadline']);
+        update_user_meta( $user->ID, 'iban', $data['iban']);
+
+        return rest_ensure_response( ['success' => true] );
+    }
+
 }

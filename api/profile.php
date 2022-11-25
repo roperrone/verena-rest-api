@@ -113,7 +113,6 @@ class Verena_REST_Profile_Controller {
             'pageTitle' => 'required',
             'seoTitle' => 'required',
             'shortDescription' => 'required',
-            'longDescription' => 'required',
             'specialty' => 'required',
             'location' => 'required|json',
             'cvText' => 'required'
@@ -182,8 +181,19 @@ class Verena_REST_Profile_Controller {
         update_post_meta( $post->ID, 'profession', $data['profession']);
         update_post_meta( $post->ID, 'seo_title', $data['seoTitle']);
         update_post_meta( $post->ID, 'short_description', $data['shortDescription']);
-        update_post_meta( $post->ID, 'long_description', $data['longDescription']);
+        update_post_meta( $post->ID, 'long_description', $data['longDescription'] ?? null);
         update_post_meta( $post->ID, 'profile_location', $data['location']);
+
+        // Retrieve latitude / longitude
+        $main_address = json_decode($data['location'], true)[0]['address'] ?? null;
+
+        if($main_address) {
+            $location_details = \Verena_Geocoding_API::get_lat_lng($main_address);
+            update_post_meta($post->ID, '_lat', $location_details['lat'] ?? null);
+            update_post_meta($post->ID, '_lng', $location_details['lng'] ?? null);
+            update_post_meta($post->ID, '_locality', $location_details['locality'] ?? null);
+        }
+
         update_post_meta( $post->ID, 'cv_text', $data['cvText']);
 
         // change the featured image

@@ -26,6 +26,8 @@ class Verena_REST_API_Controller {
       $this->profile = new \VerenaRestApi\Verena_REST_Profile_Controller();
       $this->gcal = new \VerenaRestApi\Verena_REST_Gcal_Controller();
       $this->book = new \VerenaRestApi\Verena_REST_Book_Controller();
+      $this->upload = new \VerenaRestApi\Verena_REST_Upload_Controller();
+      $this->stripe = new \VerenaRestApi\Verena_REST_Stripe_Controller();
   }
 
   public function register_routes() {
@@ -38,6 +40,8 @@ class Verena_REST_API_Controller {
       $this->profile->register_routes();
       $this->gcal->register_routes();
       $this->book->register_routes();
+      $this->upload->register_routes();
+      $this->stripe->register_routes();
   }
 
   

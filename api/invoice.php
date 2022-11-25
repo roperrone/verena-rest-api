@@ -122,12 +122,13 @@ class Verena_REST_Invoice_Controller {
         $validator = new Validator();
         $validation = $validator->make($data, [
             "clientId" =>  'required|numeric',
-            "consultationId" => 'required|numeric',
             "email" => 'required|email',
-            "consultationDetails" => 'required',
-            "status" => 'required|numeric',
-            "price" => 'required|numeric',
+            "invoiceLineItems" => 'required',
             "time" =>  'required',
+            "tvaApplicable" => 'required',
+            "siret" => 'required',
+            "paymentMethod" => 'required',
+            "paymentDeadline" => 'required',
         ]);
 
         $validation->validate();
@@ -143,12 +144,40 @@ class Verena_REST_Invoice_Controller {
         $invoice_number = $wpdb->get_row( $wpdb->prepare( "SELECT MAX(invoice_number) + 1 FROM {$this->invoice_table} WHERE member_id = %d", $user->ID ), ARRAY_A);
         $invoice_number = array_shift($invoice_number) ?? 1;
 
-        $query = $wpdb->prepare("
-            INSERT INTO {$this->invoice_table} (invoice_number, member_id, client_id, consultation_id, email, consultation_details, invoice_status, price, date) 
-            VALUES (%d, %d, %d, %d, %s, %s, %d, %d, %s)", $invoice_number, $user->ID, $data['clientId'], $data['consultationId'], $data['email'], $data['consultationDetails'], $data['invoiceStatus'], $data['price'], $data['time'],
+        global $wpdb;
+
+        $price = 0;
+        $invoice_data = array(
+            "items" => $data['invoiceLineItems'],
+            "settings" => array(
+                "tva_applicable" => $data['tvaApplicable'],
+                "tva_number" => $data['tvaNumber'] ?? null,
+                "siret" => $data['siret'],
+                "adeli" => $data['adeli'] ?? null,
+                "payment_method" => $data['paymentMethod'],
+                "payment_deadline" => $data['paymentDeadline'],
+                "iban" => $data['iban'] ?? null,
+            )
         );
-        $success = $wpdb->query($query);
-        return rest_ensure_response(['success' => (boolean)$success]);
+
+        foreach($data['invoiceLineItems'] as $item) {
+            $price += (double)$item['price'] ?? 0;
+        }
+
+        // Save the link in our database
+        $wpdb->insert( $this->invoice_table, array(
+            "invoice_number" => $invoice_number,
+            "member_id" => $user->ID,
+            "client_id" =>  $data['clientId'],
+            "email" => $data['email'],
+            "data" => json_encode($invoice_data),
+            "price" => $price,
+            "date" => $data['time'],
+        ), 
+            array('%d', '%d', '%d', '%s', '%s', '%d', '%s')
+        );
+
+        return rest_ensure_response(['success' => true]);
     }
 
     public function put_invoice(\WP_REST_Request $request) {
@@ -191,16 +220,24 @@ class Verena_REST_Invoice_Controller {
 
     protected function format_invoice($invoice) {
         $date = new \DateTime($invoice['date'], new \DateTimeZone('Europe/Paris'));
+        $invoice_data = json_decode($invoice['data'], TRUE);
+        $invoice_items = array_map(
+            fn($el) => array('name' => $el['name'], 'price' => $el['price']. ' €'), 
+            $invoice_data['items']
+        );
 
         return array(
             "invoiceId" => (int)$invoice['id'],
             "invoiceNumber" => $invoice['invoice_number'] ? (int)$invoice['invoice_number'] : null,
             "clientId" => (int)$invoice['client_id'],
-            "consultationId" => (int)$invoice['consultation_id'],
             "email" => $invoice['email'],
-            "consultationDetails" => $invoice['consultation_details'],
-            "status" => (int)$invoice['invoice_status'],
-            "price" => (int)$invoice['price'],
+            "data" => array(
+                'items' => $invoice_items,
+                'settings' => $invoice_data['settings']
+            ),
+            "price_ht" => $invoice['price']." €",
+            "tva" => $invoice_data['settings']['tva_applicable'] ? (double)($invoice['price']*0.20) . " €" : "0 €",
+            "price_ttc" => $invoice_data['settings']['tva_applicable'] ? (double)($invoice['price']*1.20) . " €" : $invoice['price']." €",
             "time" =>  $date->format(\DateTime::W3C),
         );
     }

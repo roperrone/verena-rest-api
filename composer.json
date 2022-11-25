@@ -1,6 +1,9 @@
 {
     "require": {
         "rakit/validation": "^1.4",
-        "ramsey/uuid": "^4.2"
+        "ramsey/uuid": "^4.2",
+        "guzzlehttp/guzzle": "^7.5.0",
+        "stripe/stripe-php": "^9.9",
+        "aws/aws-sdk-php": "^3.247"
     }
 }
