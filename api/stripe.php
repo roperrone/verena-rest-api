@@ -7,9 +7,6 @@ require_once __DIR__ . '/../index.php';
 
 use Rakit\Validation\Validator;
 
-define('STRIPE_API_KEY', 'sk_test_51Lcy50En4kqLgAwBAqLfrlFhPz8WkMarVvtROQMXqepasY8jivEGhmGYj7YjL27T748Vncx4eLdNqCSk0Lm5uECq00xOkdDC8r');
-define('STRIPE_REDIRECT_URI', 'http://localhost:3000/payments/settings');
-
 if (!defined("ABSPATH")) {
   exit; 
 }
@@ -81,7 +78,7 @@ class Verena_REST_Stripe_Controller {
             'onboarding_link' => $link,
             'account' => array(
                 'id' => $account_details['id'] ?? null,
-                'charges_enabled' => $account_details['charges_enabled'] ?? null,
+                'charges_enabled' => $account_details['charges_enabled'] ?? false,
                 'country' => $account_details['country'] ?? null,
                 'created' => $account_details['created'] ?? null,
             ),
@@ -105,8 +102,9 @@ class Verena_REST_Stripe_Controller {
 
         $display_results = [];
         foreach($results as $result){
+
             $display_results[] = [
-                'date' => $result->date,
+                'date' => \DateTime::createFromFormat('Y-m-d H:i:s', $result->date)->format(\DateTime::W3C),
                 'title' => $result->title,
                 'price' => (double)$result->price,
                 'link' => $result->link,

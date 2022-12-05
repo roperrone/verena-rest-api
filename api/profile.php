@@ -115,7 +115,6 @@ class Verena_REST_Profile_Controller {
             'shortDescription' => 'required',
             'specialty' => 'required',
             'location' => 'required|json',
-            'cvText' => 'required'
         ]);
 
         $validation->validate();
@@ -126,8 +125,8 @@ class Verena_REST_Profile_Controller {
         }
         
         // update the account
-        update_user_meta( $user->ID, 'first_name', $data['firstname']);
-        update_user_meta( $user->ID, 'last_name', $data['lastname']);
+        update_user_meta( $user->ID, 'first_name', $data['firstname'] ??  '');
+        update_user_meta( $user->ID, 'last_name', $data['lastname'] ??  '');
         
         // Get the post
         $author_post = new \WP_Query([
@@ -142,14 +141,14 @@ class Verena_REST_Profile_Controller {
             // update the post
             $my_post = array(
                 'ID'           => $post->ID,
-                'post_title'   => $data['pageTitle'],
+                'post_title'   => $data['pageTitle'] ??  $data['firstname']. ' ' . $data['lastname'],
             );
 
             wp_update_post( $my_post );
         } else {
             $my_post = array(
                 'post_title'   => $data['pageTitle'],
-                'post_status'   => 'pending',
+                'post_status'   => 'publish',
               );
 
             $post_id = wp_insert_post( $my_post );
@@ -178,9 +177,9 @@ class Verena_REST_Profile_Controller {
 
         wp_set_post_categories($post->ID, $post_categories);
 
-        update_post_meta( $post->ID, 'profession', $data['profession']);
-        update_post_meta( $post->ID, 'seo_title', $data['seoTitle']);
-        update_post_meta( $post->ID, 'short_description', $data['shortDescription']);
+        update_post_meta( $post->ID, 'profession', $data['profession'] ?? '');
+        update_post_meta( $post->ID, 'seo_title', $data['seoTitle'] ?? '');
+        update_post_meta( $post->ID, 'short_description', $data['shortDescription'] ?? '');
         update_post_meta( $post->ID, 'long_description', $data['longDescription'] ?? null);
         update_post_meta( $post->ID, 'profile_location', $data['location']);
 
@@ -194,7 +193,7 @@ class Verena_REST_Profile_Controller {
             update_post_meta($post->ID, '_locality', $location_details['locality'] ?? null);
         }
 
-        update_post_meta( $post->ID, 'cv_text', $data['cvText']);
+        update_post_meta( $post->ID, 'cv_text', $data['cvText'] ?? '');
 
         // change the featured image
         if ($data['thumbnailId']) {
