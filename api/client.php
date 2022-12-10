@@ -102,7 +102,7 @@ class Verena_REST_Client_Controller {
                 });
 
                 $lastAppointments = new \DateTime('@'.$appointments[0]->get_start(false));
-                $lastAppointments = str_replace('+00:00', '+02:00', $lastAppointments->format(\DateTime::W3C));
+                $lastAppointments = $lastAppointments->format("Y-m-d\TH:i:s");
                 $countAppointments = sizeof($appointments);
             }
 

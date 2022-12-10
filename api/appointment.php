@@ -93,8 +93,8 @@ class Verena_REST_Appointment_Controller {
                 "appointmentId" => $appointment->get_id(),
                 "clientId" => $appointment->get_customer_id(),
                 "consultationTypeId" => $appointment->get_product_id(),
-                "timeStart" => str_replace('+00:00', '+02:00', $dateStart->format(\DateTime::W3C)),
-                "timeEnd" => str_replace('+00:00', '+02:00', $dateStop->format(\DateTime::W3C)),
+                "timeStart" => $dateStart->format("Y-m-d\TH:i:s"),
+                "timeEnd" => $dateStop->format("Y-m-d\TH:i:s"),
                 "status" => $appointment->get_status(),
                 "videoconferenceUrl" => $videoconferenceUrl ?? null,
             );
@@ -277,12 +277,16 @@ class Verena_REST_Appointment_Controller {
             return new \WP_Error( '403', 'You can\'t delete this appointment', array( 'status' => 403 ) );
         }
 
+        // Get the cancellation email
+        $email = WC()->mailer()->get_emails()['WC_Email_Appointment_Cancelled'];
+        $email->trigger( $appointment->ID );
+
         // Remove from GCal
         $wc_appointment = wc_appointments_integration_gcal();
         $wc_appointment->set_user_id( $user->ID );
         $wc_appointment->remove_from_gcal( $appointment->ID, $user->ID );
 
-        $success = $appointment->delete(true);
+        $success = $appointment->delete(false);
 
         if ($success) {
             \Verena_Notifications_Helper::add_notification(

@@ -104,7 +104,7 @@ class Verena_REST_Stripe_Controller {
         foreach($results as $result){
 
             $display_results[] = [
-                'date' => \DateTime::createFromFormat('Y-m-d H:i:s', $result->date)->format(\DateTime::W3C),
+                'date' => \DateTime::createFromFormat('Y-m-d H:i:s', $result->date)->format("Y-m-d\TH:i:s"),
                 'title' => $result->title,
                 'price' => (double)$result->price,
                 'link' => $result->link,

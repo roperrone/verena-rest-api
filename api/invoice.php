@@ -238,7 +238,7 @@ class Verena_REST_Invoice_Controller {
             "price_ht" => $invoice['price']." €",
             "tva" => $invoice_data['settings']['tva_applicable'] ? (double)($invoice['price']*0.20) . " €" : "0 €",
             "price_ttc" => $invoice_data['settings']['tva_applicable'] ? (double)($invoice['price']*1.20) . " €" : $invoice['price']." €",
-            "time" =>  $date->format(\DateTime::W3C),
+            "time" =>  $date->format("Y-m-d\TH:i:s"),
         );
     }
 }

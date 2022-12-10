@@ -53,14 +53,15 @@ class Verena_REST_Notification_Controller {
 
         $json = [];
         foreach($notifications as $notification) {
-            $date = new \DateTime($notification['time']);
+            $date = new \DateTime('@'.$notification['time']);
+            $date->setTimezone(new \DateTimeZone('Europe/Paris'));
 
             $json[] = array(
                 "id" => (int)$notification['id'],
                 "type" => (int)$notification['notifications_type_id'],
                 "message" => $notification['message'],
                 "url" => $notification['url'],
-                "time" => $date->format(\DateTime::W3C),
+                "time" => $date->format("Y-m-d\TH:i:s"),
             );
         }
 
