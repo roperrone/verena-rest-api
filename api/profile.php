@@ -11,6 +11,10 @@ if (!defined("ABSPATH")) {
   exit; 
 }
 
+if (file_exists (ABSPATH.'/wp-admin/includes/taxonomy.php')) {
+    require_once (ABSPATH.'/wp-admin/includes/taxonomy.php'); 
+}
+
 class Verena_REST_Profile_Controller {
 
     public function __construct() {
@@ -80,7 +84,7 @@ class Verena_REST_Profile_Controller {
         }
 
         $profilePicture = get_post($post_meta['_thumbnail_id']);
-        
+
         $json = array(
             "firstname" => $metadata['first_name'] ?? '',
             "lastname" => $metadata['last_name'] ?? '',
@@ -95,7 +99,7 @@ class Verena_REST_Profile_Controller {
             "longDescription" => $post_meta['long_description'] ?? '',
             "specialty" => $specialty ?? '',
             "location" => $post_meta['profile_location'] ? json_decode($post_meta['profile_location']) : array(array("address" => '')),
-            "cvText" =>  $post_meta['cv_text'],
+            "cvText" =>  $post_meta['cv_text']
         );
 
         return rest_ensure_response( $json );

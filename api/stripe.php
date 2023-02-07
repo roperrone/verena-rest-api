@@ -102,9 +102,11 @@ class Verena_REST_Stripe_Controller {
 
         $display_results = [];
         foreach($results as $result){
+            $date = new \DateTime('@'.$result->date);
+            $date->setTimezone(new \DateTimeZone('Europe/Paris'));
 
             $display_results[] = [
-                'date' => \DateTime::createFromFormat('Y-m-d H:i:s', $result->date)->format("Y-m-d\TH:i:s"),
+                'date' => $date->format("Y-m-d\TH:i:s"),
                 'title' => $result->title,
                 'price' => (double)$result->price,
                 'link' => $result->link,
@@ -231,13 +233,16 @@ class Verena_REST_Stripe_Controller {
 
         global $wpdb;
 
+        $timestamp = time();
+
         // Save the link in our database
         $wpdb->insert("wp_payment_links", array(
             "praticien_id" => $user->ID,
             "title" => $data['title'],
             "price" => $data['amount'],
             "link" => $payment_link_arr['url'],
-        ), array('%d', '%s', '%s', '%s'));
+            "date" => $timestamp
+        ), array('%d', '%s', '%s', '%s', '%d'));
 
         $json = array(
             'payment_link' => $payment_link_arr['url'] ?? null,

@@ -70,6 +70,8 @@ class Verena_REST_Account_Controller {
             "phoneNumber" => $metadata['billing_phone'] ?? null,
             "billingAddress" => $metadata['formatted_address'] ?? null,
             "siren" => $metadata['siren'] ?? null,
+            "availabilities" => json_decode($metadata['availabilities'] ?? '[]'),
+            "inputInterval" => $metadata['input_interval'] ?? null,
             "invoiceSettings" => [
                 "tvaApplicable" => (boolean)$metadata['tva_applicable'] ?? null,
                 "tvaNumber" => $metadata['tva_number'] ?? null,
@@ -97,6 +99,8 @@ class Verena_REST_Account_Controller {
             'phoneNumber' => 'required|digits:10',
             'billingAddress' => 'required',
             'siren' => 'required|numeric',
+            'availabilities' => 'json',
+            'inputInterval' => 'numeric',
         ]);
 
         $validation->validate();
@@ -113,6 +117,8 @@ class Verena_REST_Account_Controller {
         update_user_meta( $user->ID, 'billing_phone', $data['phoneNumber']);
         update_user_meta( $user->ID, 'formatted_address', $data['billingAddress']);
         update_user_meta( $user->ID, 'siren', $data['siren']);
+        update_user_meta( $user->ID, 'availabilities', $data['availabilities']);
+        update_user_meta( $user->ID, 'input_interval', $data['inputInterval']);
 
         // update user email
         $user_id = wp_update_user( array( 'ID' => $user->ID, 'user_email' => $data['email'] ) );

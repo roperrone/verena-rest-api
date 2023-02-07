@@ -278,6 +278,8 @@ class Verena_REST_Appointment_Controller {
         }
 
         // Get the cancellation email
+        //$email = WC()->mailer()->get_emails()['WC_Email_Appointment_Reminder']; 
+
         $email = WC()->mailer()->get_emails()['WC_Email_Appointment_Cancelled'];
         $email->trigger( $appointment->ID );
 

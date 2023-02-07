@@ -57,7 +57,7 @@ class Verena_REST_Gcal_Controller {
         if ($_SERVER['REMOTE_ADDR'] === '127.0.0.1') {
             $wc_gcal->set_redirect_after_oauth_uri('http://localhost:3000');
         } else {
-           $wc_gcal->set_redirect_after_oauth_uri('https://praticien.verena.care');
+           $wc_gcal->set_redirect_after_oauth_uri('https://pro.wellup.fr');
         } 
         
         $wc_gcal->set_user_id($user->ID);

@@ -90,24 +90,6 @@ class Verena_REST_Consultation_Controller {
             $metadata = array_map(fn($item) => $item[0], get_post_meta($product->ID));
             $productAvailability = array_filter($availability, fn($v, $k) => $v['kind_id'] == $product->ID, ARRAY_FILTER_USE_BOTH);
             
-            $fromRange = '';
-            $toRange = '';
-
-            for($i=1; $i <= 7; $i++) {
-                $isAvailable[$i] = false;
-                $filter = array_filter($productAvailability, fn($v, $k) => $v['range_type'] == 'time:'.$i, ARRAY_FILTER_USE_BOTH); 
-
-                if(!empty($filter)) {
-                    $isAvailable[$i] = array_values($filter)[0]['appointable'] == 'yes';
-
-                    // This timeslot is appointable. Get the from/to range
-                    if ($isAvailable[$i]) {
-                        $fromRange = array_values($filter)[0]['from_range'];
-                        $toRange = array_values($filter)[0]['to_range'];
-                    }
-                }
-            }
-
             $json[] = array(
                 "consultationId" => $product->ID,
                 "name" => $product->post_title,
@@ -119,18 +101,8 @@ class Verena_REST_Consultation_Controller {
                     'lng' => (double)$metadata['_lng'] ?? null,
                 ),
                 "description" => $product->post_content,
-                "availability"=> array(
-                    "Mo" => $isAvailable[1],
-                    "Tu" => $isAvailable[2],
-                    "We" => $isAvailable[3],
-                    "Th" => $isAvailable[4],
-                    "Fr" => $isAvailable[5],
-                    "Sa" => $isAvailable[6],
-                    "Su" => $isAvailable[7],
-                ),
+                "availabilities"=> json_decode($metadata['_availabilities'], true),
                 "online" => (bool)$metadata['_online'],
-                "availableFrom" => $fromRange,
-                "availableTo" => $toRange,
                 "timeInterval" => $metadata['_wc_appointment_interval'],
                 "deleted" => ($product->post_status === 'archived') ?? false,
             );
@@ -148,10 +120,8 @@ class Verena_REST_Consultation_Controller {
             "price" => 'required|numeric',
             "duration" => 'required|numeric',
             "location" => 'required',
-            "availability" => 'required|json',
             "online" => 'required|boolean',
-            "availableFrom" =>  'required',
-            "availableTo" =>  'required',
+            "availabilities" =>  'required|json',
             "timeInterval" =>  'numeric',
         ]);
 
@@ -185,6 +155,7 @@ class Verena_REST_Consultation_Controller {
                 '_product_address' => 'field_6294e231e67c0',
                 'product_address' => $data['location'],
                 '_wcfm_product_author' => $user->ID,
+                '_availabilities' => $data['availabilities'],
             )
         );
 
@@ -205,29 +176,84 @@ class Verena_REST_Consultation_Controller {
         $product->set_interval_unit('minute');
         $product->save();
 
-        $available = array_values(json_decode($data['availability'], true));
+        $available = json_decode($data['availabilities'], true);
+        $arrayKeys = ['mo', 'tu', 'we', 'th', 'fr', 'sa', 'su'];
+
+        $order = 0;
 
         // Add availabilities
         for($i=1; $i<=7; $i++) {
-            $wpdb->insert(
-                $wpdb->prefix . 'wc_appointments_availability',
-                array(
-                    'kind'          => 'availability#product',
-                    'kind_id'       => $product->get_id(),
-                    'title'         => '',
-                    'range_type'    => 'time:'.$i,
-                    'from_range'    => $data['availableFrom'],
-                    'to_range'      => $data['availableTo'],
-                    'from_date'     => '',
-                    'to_date'       => '',
-                    'appointable'   => $available[$i - 1] ? 'yes' : 'no',
-                    'priority'      => 10,
-                    'ordering'      => $i - 1,
-                    'rrule'         => '',
-                    'date_created'  => current_time( 'mysql' ),
-                    'date_modified' => current_time( 'mysql' ),
-                )
-            );
+            $day_availability = $available[$arrayKeys[$i - 1]];
+
+            // If this day has been marked as unavailable
+            if (!$day_availability['active']) {
+                $wpdb->insert(
+                    $wpdb->prefix . 'wc_appointments_availability',
+                    array(
+                        'kind'          => 'availability#product',
+                        'kind_id'       => $product->get_id(),
+                        'title'         => '',
+                        'range_type'    => 'time:'.$i,
+                        'from_range'    => '00:00',
+                        'to_range'      => '23:59',
+                        'from_date'     => '',
+                        'to_date'       => '',
+                        'appointable'   => 'no',
+                        'priority'      => 10,
+                        'ordering'      => $order,
+                        'rrule'         => '',
+                        'date_created'  => current_time( 'mysql' ),
+                        'date_modified' => current_time( 'mysql' ),
+                    )
+                ); 
+                $order++;
+            } else {
+                if( !empty($day_availability[0]) && !empty($day_availability[1])) {
+                    $wpdb->insert(
+                        $wpdb->prefix . 'wc_appointments_availability',
+                        array(
+                            'kind'          => 'availability#product',
+                            'kind_id'       => $product->get_id(),
+                            'title'         => '',
+                            'range_type'    => 'time:'.$i,
+                            'from_range'    => $day_availability[0],
+                            'to_range'      => $day_availability[1],
+                            'from_date'     => '',
+                            'to_date'       => '',
+                            'appointable'   => 'yes',
+                            'priority'      => 10,
+                            'ordering'      => $order,
+                            'rrule'         => '',
+                            'date_created'  => current_time( 'mysql' ),
+                            'date_modified' => current_time( 'mysql' ),
+                        )
+                    );
+                    $order++;
+                }
+
+                if( !empty($day_availability[2]) && !empty($day_availability[3])) {
+                    $wpdb->insert(
+                        $wpdb->prefix . 'wc_appointments_availability',
+                        array(
+                            'kind'          => 'availability#product',
+                            'kind_id'       => $product->get_id(),
+                            'title'         => '',
+                            'range_type'    => 'time:'.$i,
+                            'from_range'    => $day_availability[2],
+                            'to_range'      => $day_availability[3],
+                            'from_date'     => '',
+                            'to_date'       => '',
+                            'appointable'   => 'yes',
+                            'priority'      => 10,
+                            'ordering'      => $order,
+                            'rrule'         => '',
+                            'date_created'  => current_time( 'mysql' ),
+                            'date_modified' => current_time( 'mysql' ),
+                        )
+                    );
+                    $order++;
+                }
+            }
         }
 
        return rest_ensure_response(['success' => true]);
@@ -244,10 +270,8 @@ class Verena_REST_Consultation_Controller {
             "price" => 'required|numeric',
             "duration" => 'required|numeric',
             "location" => 'required',
-            "availability" => 'required|json',
             "online" => 'required|boolean',
-            "availableFrom" =>  'required',
-            "availableTo" =>  'required',
+            "availabilities" => 'required|json',
             "timeInterval" =>  'numeric',
         ]);
 
@@ -276,6 +300,7 @@ class Verena_REST_Consultation_Controller {
         update_post_meta($product->ID, '_regular_price', $data['price']);
         update_post_meta($product->ID, '_price', $data['price']);
         update_post_meta($product->ID, '_online', (bool)$data['online']);
+        update_post_meta($product->ID, '_availabilities', $data['availabilities']);
         update_post_meta($product->ID, 'product_address', $data['location']);
 
         // Update the WC_Product_Appointment options
@@ -293,29 +318,84 @@ class Verena_REST_Consultation_Controller {
         $query = $wpdb->prepare("DELETE FROM {$wpdb->prefix}wc_appointments_availability WHERE kind = %s AND kind_id = %d", 'availability#product', $data['consultationId']);
         $wpdb->query($query);
 
-        $availableData = array_values(json_decode($data['availability'], true));
+        $available = json_decode($data['availabilities'], true);
+        $arrayKeys = ['mo', 'tu', 'we', 'th', 'fr', 'sa', 'su'];
+
+        $order = 0;
 
         // Add availabilities
         for($i=1; $i<=7; $i++) {
-            $wpdb->insert(
-                $wpdb->prefix . 'wc_appointments_availability',
-                array(
-                    'kind'          => 'availability#product',
-                    'kind_id'       => $product->get_id(),
-                    'title'         => '',
-                    'range_type'    => 'time:'.$i,
-                    'from_range'    => $data['availableFrom'],
-                    'to_range'      => $data['availableTo'],
-                    'from_date'     => '',
-                    'to_date'       => '',
-                    'appointable'   => $availableData[$i - 1] ? 'yes' : 'no',
-                    'priority'      => 10,
-                    'ordering'      => $i - 1,
-                    'rrule'         => '',
-                    'date_created'  => current_time( 'mysql' ),
-                    'date_modified' => current_time( 'mysql' ),
-                )
-            );
+            $day_availability = $available[$arrayKeys[$i - 1]];
+
+            // If this day has been marked as unavailable
+            if (!$day_availability['active']) {
+                $wpdb->insert(
+                    $wpdb->prefix . 'wc_appointments_availability',
+                    array(
+                        'kind'          => 'availability#product',
+                        'kind_id'       => $product->get_id(),
+                        'title'         => '',
+                        'range_type'    => 'time:'.$i,
+                        'from_range'    => '00:00',
+                        'to_range'      => '23:59',
+                        'from_date'     => '',
+                        'to_date'       => '',
+                        'appointable'   => 'no',
+                        'priority'      => 10,
+                        'ordering'      => $order,
+                        'rrule'         => '',
+                        'date_created'  => current_time( 'mysql' ),
+                        'date_modified' => current_time( 'mysql' ),
+                    )
+                ); 
+                $order++;
+            } else {
+                if( !empty($day_availability[0]) && !empty($day_availability[1])) {
+                    $wpdb->insert(
+                        $wpdb->prefix . 'wc_appointments_availability',
+                        array(
+                            'kind'          => 'availability#product',
+                            'kind_id'       => $product->get_id(),
+                            'title'         => '',
+                            'range_type'    => 'time:'.$i,
+                            'from_range'    => $day_availability[0],
+                            'to_range'      => $day_availability[1],
+                            'from_date'     => '',
+                            'to_date'       => '',
+                            'appointable'   => 'yes',
+                            'priority'      => 10,
+                            'ordering'      => $order,
+                            'rrule'         => '',
+                            'date_created'  => current_time( 'mysql' ),
+                            'date_modified' => current_time( 'mysql' ),
+                        )
+                    );
+                    $order++;
+                }
+
+                if( !empty($day_availability[2]) && !empty($day_availability[3])) {
+                    $wpdb->insert(
+                        $wpdb->prefix . 'wc_appointments_availability',
+                        array(
+                            'kind'          => 'availability#product',
+                            'kind_id'       => $product->get_id(),
+                            'title'         => '',
+                            'range_type'    => 'time:'.$i,
+                            'from_range'    => $day_availability[2],
+                            'to_range'      => $day_availability[3],
+                            'from_date'     => '',
+                            'to_date'       => '',
+                            'appointable'   => 'yes',
+                            'priority'      => 10,
+                            'ordering'      => $order,
+                            'rrule'         => '',
+                            'date_created'  => current_time( 'mysql' ),
+                            'date_modified' => current_time( 'mysql' ),
+                        )
+                    );
+                    $order++;
+                }
+            }
         }
 
         return rest_ensure_response(['success' => true]);

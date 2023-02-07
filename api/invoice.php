@@ -125,6 +125,7 @@ class Verena_REST_Invoice_Controller {
             "email" => 'required|email',
             "invoiceLineItems" => 'required',
             "time" =>  'required',
+            "timeJobCompletion" => 'required',
             "tvaApplicable" => 'required',
             "siret" => 'required',
             "paymentMethod" => 'required',
@@ -173,8 +174,9 @@ class Verena_REST_Invoice_Controller {
             "data" => json_encode($invoice_data),
             "price" => $price,
             "date" => $data['time'],
+            "dateJobCompletion" => $data['timeJobCompletion'],
         ), 
-            array('%d', '%d', '%d', '%s', '%s', '%d', '%s')
+            array('%d', '%d', '%d', '%s', '%s', '%d', '%s', '%s')
         );
 
         return rest_ensure_response(['success' => true]);
@@ -220,6 +222,8 @@ class Verena_REST_Invoice_Controller {
 
     protected function format_invoice($invoice) {
         $date = new \DateTime($invoice['date'], new \DateTimeZone('Europe/Paris'));
+        $dateJobCompletion = new \DateTime($invoice['dateJobCompletion'], new \DateTimeZone('Europe/Paris'));
+
         $invoice_data = json_decode($invoice['data'], TRUE);
         $invoice_items = array_map(
             fn($el) => array('name' => $el['name'], 'price' => $el['price']. ' €'), 
@@ -239,6 +243,7 @@ class Verena_REST_Invoice_Controller {
             "tva" => $invoice_data['settings']['tva_applicable'] ? (double)($invoice['price']*0.20) . " €" : "0 €",
             "price_ttc" => $invoice_data['settings']['tva_applicable'] ? (double)($invoice['price']*1.20) . " €" : $invoice['price']." €",
             "time" =>  $date->format("Y-m-d\TH:i:s"),
+            "timeJobCompletion" => $invoice['dateJobCompletion'] ? $dateJobCompletion->format("Y-m-d\TH:i:s") : $date->format("Y-m-d\TH:i:s"),
         );
     }
 }
