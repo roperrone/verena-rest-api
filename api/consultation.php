@@ -103,6 +103,7 @@ class Verena_REST_Consultation_Controller {
                 "description" => $product->post_content,
                 "availabilities"=> json_decode($metadata['_availabilities'], true),
                 "online" => (bool)$metadata['_online'],
+                "custom" => true,
                 "timeInterval" => $metadata['_wc_appointment_interval'],
                 "deleted" => ($product->post_status === 'archived') ?? false,
             );

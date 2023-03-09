@@ -5,6 +5,7 @@ namespace VerenaRestApi;
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/../index.php';
 
+use Ramsey\Uuid\Uuid;
 use Rakit\Validation\Validator;
 
 require_once __DIR__ . '/../index.php';
@@ -65,6 +66,14 @@ class Verena_REST_Appointment_Controller {
                 'permission_callback' => array( $this, 'permission_callback' ),
             ),
         ) );
+
+        // This route is called when a user deletes the appointment himself
+        register_rest_route( $this->namespace, $this->endpoint . '/delete' , array(
+            array(
+                'methods'   => 'POST',
+                'callback'  => array( $this, 'delete_appointment_from_email_link' ),
+            ),
+        ) );
     }
 
     public function get_appointment() {
@@ -83,21 +92,7 @@ class Verena_REST_Appointment_Controller {
 
         $json = [];
         foreach($appointments as $appointment) {
-            $dateStart = new \DateTime('@'.$appointment->get_start(false));
-            $dateStop = new \DateTime('@'.$appointment->get_end(false));
-
-            // Get video conference URL
-            $videoconferenceUrl = get_post_meta($appointment->get_id(), 'google_calendar_event_details', true);
-
-            $json[] = array(
-                "appointmentId" => $appointment->get_id(),
-                "clientId" => $appointment->get_customer_id(),
-                "consultationTypeId" => $appointment->get_product_id(),
-                "timeStart" => $dateStart->format("Y-m-d\TH:i:s"),
-                "timeEnd" => $dateStop->format("Y-m-d\TH:i:s"),
-                "status" => $appointment->get_status(),
-                "videoconferenceUrl" => $videoconferenceUrl ?? null,
-            );
+            $json[] = $this->formatAppointment($appointment);
         }
 
         return rest_ensure_response( ['appointments' => $json] );
@@ -113,6 +108,7 @@ class Verena_REST_Appointment_Controller {
             "consultationId" => 'required|numeric',
             "timeStart" => 'required',
             "timeEnd" => 'required',
+            "allDay" => 'boolean'
         ]);
 
         $validation->validate();
@@ -173,7 +169,16 @@ class Verena_REST_Appointment_Controller {
         $appointment->set_product_id($data['consultationId']);
         $appointment->set_status('confirmed');
         $appointment->set_staff_id($user->ID);
+
+        if ($data['allDay']) {
+            $appointment->set_all_day($data['allDay']);
+        }
+
         $appointmentId = $appointment->save();
+
+        // Create delete token
+        $deleteToken = Uuid::uuid4()->toString();
+        update_post_meta($appointmentId, 'appointment_delete_token', $deleteToken);
 
         $success = ($order_id > 0 && $appointmentId > 0);
 
@@ -181,13 +186,8 @@ class Verena_REST_Appointment_Controller {
         $wc_appointment = wc_appointments_integration_gcal();
         $wc_appointment->sync_to_gcal( $appointmentId );
 
-        if ($success) {
-            \Verena_Notifications_Helper::add_notification(
-                sprintf("Un nouveau RDV (#%s) vient d'être créé", $appointmentId)
-            );
-        }
-
-        return rest_ensure_response(['success' => $success]);
+        $json =  $this->formatAppointment($appointment);
+        return rest_ensure_response(['success' => $success, 'appointment' => $json ]);
     }
 
     public function put_appointment(\WP_REST_Request $request) {
@@ -199,6 +199,7 @@ class Verena_REST_Appointment_Controller {
             "appointmentId" => 'required|numeric',
             "consultationId" => 'required|numeric',
             "status" => 'required',
+            "allDay" => 'boolean',
         ]);
 
         $validation->validate();
@@ -225,6 +226,10 @@ class Verena_REST_Appointment_Controller {
             return new \WP_Error( '403', 'This consultation id does\'t belong to this user', array( 'status' => 403 ) );
         }
 
+        if( ($data['timeStart'] && !$data['timeEnd']) || (!$data['timeStart'] && $data['timeEnd'])) {
+            return new \WP_Error( '400', 'Invalid time range. Both timeStart and timeEnd should be provided.', array( 'status' => 400 ) );
+        }
+
         // update the consultation id
         $appointment->set_product_id($data['consultationId']);
 
@@ -242,10 +247,32 @@ class Verena_REST_Appointment_Controller {
                 return new \WP_Error( '400', 'Invalid status', array( 'status' => 403 ) );
         }
 
+        $prevStartDate = $appointment->get_start_date();
+        $prevEndDate = $appointment->get_end_date();
+
+        if ($data['timeStart']) {
+            $appointment->set_start($data['timeStart']);
+        }
+
+        if ($data['timeEnd']) {
+            $appointment->set_end($data['timeEnd']);
+        }
+
+        if ($data['allDay']) {
+            $appointment->set_all_day($data['allDay']);
+        }
+
         $appointmentId = $appointment->save();
         $success = $appointmentId > 0;
 
-        return rest_ensure_response(['success' => $success]);
+        if( $data['timeStart'] && $data['timeEnd'] ) {
+            // Send the rescheduled email
+            $email = WC()->mailer()->get_emails()['WC_Email_Appointment_Rescheduled'];
+            $email->trigger( $appointment->ID, $prevStartDate, $prevEndDate );
+        }
+        
+        $json =  $this->formatAppointment($appointment);
+        return rest_ensure_response(['success' => $success, 'appointment' => $json ]);
     }
 
     public function delete_appointment(\WP_REST_Request $request) {
@@ -277,22 +304,67 @@ class Verena_REST_Appointment_Controller {
             return new \WP_Error( '403', 'You can\'t delete this appointment', array( 'status' => 403 ) );
         }
 
-        // Get the cancellation email
-        //$email = WC()->mailer()->get_emails()['WC_Email_Appointment_Reminder']; 
-
-        $email = WC()->mailer()->get_emails()['WC_Email_Appointment_Cancelled'];
-        $email->trigger( $appointment->ID );
-
         // Remove from GCal
         $wc_appointment = wc_appointments_integration_gcal();
         $wc_appointment->set_user_id( $user->ID );
         $wc_appointment->remove_from_gcal( $appointment->ID, $user->ID );
 
-        $success = $appointment->delete(false);
+        $appointment->set_status('cancelled');
+        $appointmentId = $appointment->save();
+
+        $success = $appointmentId > 0;
+
+        return rest_ensure_response( ['success' => $success] );
+    }
+
+    public function delete_appointment_from_email_link(\WP_REST_Request $request) {
+        $data = $request->get_params();
+
+        $validator = new Validator();
+        $validation = $validator->make($data, [
+            "appointmentId" => 'required|numeric',
+            "token" => 'required',
+        ]);
+
+        $validation->validate();
+
+        if ($validation->fails()) {
+            $errors = $validation->errors();
+            return new \WP_Error( '400', $errors->firstOfAll(), array( 'status' => 400 ) );
+        }
+        
+        try {
+            $appointment = new \WC_Appointment($data['appointmentId']);
+        } catch( \Exception $e) {
+            return new \WP_Error( '404', 'This appointment doesn\'t exist', array( 'status' => 404 ) );
+        }
+
+        $appointmentDeleteToken = get_post_meta($appointment->get_id(), 'appointment_delete_token', true);
+        
+        if( $data['token'] != $appointmentDeleteToken) {
+            return new \WP_Error( '403', 'Invalid token', array( 'status' => 403 ) );
+        }
+
+        if($appointment->get_status() == 'cancelled') {
+            return new \WP_Error( '422', 'This appointment has already been deleted', array( 'status' => 422 ) );
+        }
+
+        $appointment_metadata = array_map(fn($item) => $item[0], get_post_meta($appointment->ID));
+        $staffId = (int)$appointment_metadata['_appointment_staff_id'];
+
+        // Remove from GCal
+        $wc_appointment = wc_appointments_integration_gcal();
+        $wc_appointment->set_user_id( $staffId );
+        $wc_appointment->remove_from_gcal( $appointment->ID, $staffId );
+
+        $appointment->set_status('cancelled');
+        $appointmentId = $appointment->save();
+
+        $success = $appointmentId > 0;
 
         if ($success) {
             \Verena_Notifications_Helper::add_notification(
-                sprintf("Un RDV (#%s) vient d'être supprimé", $data['appointmentId'])
+                sprintf("Un RDV (#%s) vient d'être supprimé", $data['appointmentId']), 0, $staffId
             );
         }
 
@@ -316,5 +388,23 @@ class Verena_REST_Appointment_Controller {
        }
 
        return $consultationsIds;
+   }
+
+   protected function formatAppointment($appointment): array {
+        $dateStart = new \DateTime('@'.$appointment->get_start(false));
+        $dateStop = new \DateTime('@'.$appointment->get_end(false));
+
+        // Get video conference URL
+        $videoconferenceUrl = get_post_meta($appointment->get_id(), 'google_calendar_event_details', true);
+
+        return array(
+            "appointmentId" => $appointment->get_id(),
+            "clientId" => $appointment->get_customer_id(),
+            "consultationTypeId" => $appointment->get_product_id(),
+            "timeStart" => $dateStart->format("Y-m-d\TH:i:s"),
+            "timeEnd" => $dateStop->format("Y-m-d\TH:i:s"),
+            "status" => $appointment->get_status(),
+            "videoconferenceUrl" => !empty($videoconferenceUrl) ? $videoconferenceUrl : null,
+        );
    }
 }

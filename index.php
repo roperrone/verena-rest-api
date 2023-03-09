@@ -28,6 +28,7 @@ class Verena_REST_API_Controller {
       $this->book = new \VerenaRestApi\Verena_REST_Book_Controller();
       $this->upload = new \VerenaRestApi\Verena_REST_Upload_Controller();
       $this->stripe = new \VerenaRestApi\Verena_REST_Stripe_Controller();
+      $this->availability = new \VerenaRestApi\Verena_REST_Availability_Controller();
   }
 
   public function register_routes() {
@@ -42,6 +43,7 @@ class Verena_REST_API_Controller {
       $this->book->register_routes();
       $this->upload->register_routes();
       $this->stripe->register_routes();
+      $this->availability->register_routes();
   }
 
   
@@ -68,7 +70,6 @@ add_action( 'rest_api_init', 'verena_register_my_rest_routes' );
  */
 function add_api_cors_headers() {   
     add_filter( 'rest_pre_serve_request', function( $value ) {
-//      $origin = ($_SERVER['REMOTE_ADDR'] === '127.0.0.1') ? 'http://localhost:3000' : 'https://praticien.verena.care';
       header( 'Access-Control-Allow-Headers: *');
       header( 'Access-Control-Allow-Origin: *');
       header( 'Access-Control-Allow-Methods: POST, GET, OPTIONS, PUT, DELETE' );

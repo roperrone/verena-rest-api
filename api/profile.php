@@ -93,8 +93,6 @@ class Verena_REST_Profile_Controller {
                 "uri" => $profilePicture->guid ?? null,
             ),
             "profession" => $post_meta['profession'] ?? '',
-            "pageTitle" => $pageTitle,
-            "seoTitle" => $post_meta['seo_title'] ?? '',
             "shortDescription" => $post_meta['short_description'] ?? '',
             "longDescription" => $post_meta['long_description'] ?? '',
             "specialty" => $specialty ?? '',
@@ -114,8 +112,6 @@ class Verena_REST_Profile_Controller {
             'firstname' => 'required',
             'lastname' => 'required',
             'profession' => 'required',
-            'pageTitle' => 'required',
-            'seoTitle' => 'required',
             'shortDescription' => 'required',
             'specialty' => 'required',
             'location' => 'required|json',
@@ -138,20 +134,32 @@ class Verena_REST_Profile_Controller {
             'author' => $user->ID,
             'post_status' => ['publish', 'pending'],
         ]);
+
+        // Retrieve latitude / longitude
+        $main_address = json_decode($data['location'], true)[0]['address'] ?? null;
+
+        if($main_address) {
+            $location_details = \Verena_Geocoding_API::get_lat_lng($main_address);
+        }
  
+        $professions = explode(', ', $data['profession']);
+
+        $page_title = $data['firstname'] . ' ' . $data['lastname'];
+        $seo_title = $page_title . ', ' . $professions[0] . ' ' . $location_details['locality'] . ' - Well\'up';
+
         if($author_post->have_posts()){
             $post = $author_post->posts[0];
 
             // update the post
             $my_post = array(
                 'ID'           => $post->ID,
-                'post_title'   => $data['pageTitle'] ??  $data['firstname']. ' ' . $data['lastname'],
+                'post_title'   => $page_title ??  $data['firstname']. ' ' . $data['lastname'],
             );
 
             wp_update_post( $my_post );
         } else {
             $my_post = array(
-                'post_title'   => $data['pageTitle'],
+                'post_title'   => $page_title,
                 'post_status'   => 'publish',
               );
 
@@ -182,21 +190,13 @@ class Verena_REST_Profile_Controller {
         wp_set_post_categories($post->ID, $post_categories);
 
         update_post_meta( $post->ID, 'profession', $data['profession'] ?? '');
-        update_post_meta( $post->ID, 'seo_title', $data['seoTitle'] ?? '');
+        update_post_meta( $post->ID, '_yoast_wpseo_title', $seo_title ?? '');
         update_post_meta( $post->ID, 'short_description', $data['shortDescription'] ?? '');
         update_post_meta( $post->ID, 'long_description', $data['longDescription'] ?? null);
         update_post_meta( $post->ID, 'profile_location', $data['location']);
-
-        // Retrieve latitude / longitude
-        $main_address = json_decode($data['location'], true)[0]['address'] ?? null;
-
-        if($main_address) {
-            $location_details = \Verena_Geocoding_API::get_lat_lng($main_address);
-            update_post_meta($post->ID, '_lat', $location_details['lat'] ?? null);
-            update_post_meta($post->ID, '_lng', $location_details['lng'] ?? null);
-            update_post_meta($post->ID, '_locality', $location_details['locality'] ?? null);
-        }
-
+        update_post_meta( $post->ID, '_lat', $location_details['lat'] ?? null);
+        update_post_meta( $post->ID, '_lng', $location_details['lng'] ?? null);
+        update_post_meta( $post->ID, '_locality', $location_details['locality'] ?? null);
         update_post_meta( $post->ID, 'cv_text', $data['cvText'] ?? '');
 
         // change the featured image

@@ -12,7 +12,7 @@ class Verena_Notifications_Helper {
 
         $timestamp = time();
 
-        $query = $wpdb->prepare("INSERT INTO {$notification_table} (notifications_type_id, member_id, `message`, `time`) VALUES (%d, %d, %s, %d)", $type_id, $userId, $message, $timestamp);
+        $query = $wpdb->prepare("INSERT INTO {$notification_table} (notifications_type_id, member_id, `seen`, `message`, `time`) VALUES (%d, %d, %d, %s, %d)", $type_id, $userId, 0, $message, $timestamp);
         $wpdb->query($query);
     }
 }

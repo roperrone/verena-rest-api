@@ -8,7 +8,7 @@ class Verena_Geocoding_API {
         $client = new \GuzzleHttp\Client();
         $data = array(
             'address' => $address,
-            'key' => 'AIzaSyCMokwBEd4k_ue9IBEgS1geoMhnrmHKKIM'
+            'key' => 'AIzaSyCJBDpfyyy0BQ0976yzwT_WhdsiyRqaD7w' //PROD: 'AIzaSyCMokwBEd4k_ue9IBEgS1geoMhnrmHKKIM'
         );        
 
         $res = $client->request('GET', 'https://maps.googleapis.com/maps/api/geocode/json?'.http_build_query($data));

@@ -114,7 +114,7 @@ class Verena_REST_Book_Controller {
         $min_date = \DateTime::createFromFormat('Y-m-d', $data['minDate'])->settime(0,0)->getTimestamp();
         $max_date = \DateTime::createFromFormat('Y-m-d', $data['maxDate'])->settime(0,0)->getTimestamp();
 
-        // Calculate partially scheduled/fully scheduled/unavailable days for each product.
+        // Calculate partially scheduled/fully scheduled/unavailable days for each product.        
         $scheduled_data = self::get_available_dates($min_date, $max_date, $member, $products);
 
         return rest_ensure_response( $scheduled_data );
@@ -177,8 +177,6 @@ class Verena_REST_Book_Controller {
             "lastname" => $metadata['last_name'] ?? '',
             "picture" => $profilePicture->guid ?? null,
             "profession" => $post_meta['profession'] ?? '',
-            "pageTitle" => $pageTitle,
-            "seoTitle" => $post_meta['seo_title'] ?? '',
             "shortDescription" => $post_meta['short_description'] ?? '',
             "longDescription" => $longDescription,
             "specialty" => $specialty ?? '',
@@ -243,7 +241,7 @@ class Verena_REST_Book_Controller {
         if ( empty($results) ) {
             // Create user copy (this copy belongs to the product owner: i.e _wcfm_product_author)
             $product_metadata = array_map(fn($item) => $item[0], get_post_meta($product->get_id()));
-            $user_id = $this->createUserCopy($data['firstname'], $data['lastname'], $data['email'], $product_metadata['_wcfm_product_author']);
+            $user_id = $this->createUserCopy($data['firstname'], $data['lastname'], $data['email'], $data['phone'], $product_metadata['_wcfm_product_author']);
             $user = get_user_by('id', $user_id);
         } else {
             $user = $results[0];
@@ -266,6 +264,7 @@ class Verena_REST_Book_Controller {
             'firstname' => 'required',
             'lastname' => 'required',
             'email' => 'required|email',
+            'phone' => 'required',
             'password' => 'required',
             'consultationId' => 'required|numeric',
             'date' => 'required',
@@ -312,12 +311,13 @@ class Verena_REST_Book_Controller {
         update_user_meta( $user_id, 'first_name', $data['firstname']);
         update_user_meta( $user_id, 'last_name', $data['lastname']);
         update_user_meta( $user_id, 'billing_email', $data['email']);
+        update_user_meta( $user_id, 'billing_phone', $data['phone']);
         update_user_meta( $user_id, 'hide_admin_area', 1);
         update_user_meta( $user_id, 'wp_capabilities', ['customer' => true]);
 
         // Create user copy (this copy belongs to the product owner: i.e _wcfm_product_author)
         $product_metadata = array_map(fn($item) => $item[0], get_post_meta($product->get_id()));
-        $user_id = $this->createUserCopy($data['firstname'], $data['lastname'], $data['email'], $product_metadata['_wcfm_product_author']);
+        $user_id = $this->createUserCopy($data['firstname'], $data['lastname'], $data['email'], $data['phone'], $product_metadata['_wcfm_product_author']);
 
         $user = get_user_by('id', $user_id);
 
@@ -363,6 +363,7 @@ class Verena_REST_Book_Controller {
             'first_name' => $client_meta['first_name'],
             'last_name'  => $client_meta['last_name'],
             'email'      => $client_meta['billing_email'],
+            'phone'      => $client_meta['billing_phone'],
         );
       
         // Let's create a Woocommerce order
@@ -391,6 +392,10 @@ class Verena_REST_Book_Controller {
         $appointment->set_staff_id($product_metadata['_wcfm_product_author']);
         $appointmentId = $appointment->save();
 
+        // Create delete token
+        $deleteToken = Uuid::uuid4()->toString();
+        update_post_meta($appointmentId, 'appointment_delete_token', $deleteToken);
+
         $success = ($order_id > 0 && $appointmentId > 0);
 
         // Sync to GCal
@@ -417,7 +422,7 @@ class Verena_REST_Book_Controller {
      * 
      * @return int
      */
-    function createUserCopy($firstname, $lastname, $email, $wcfm_product_author): int {
+    function createUserCopy($firstname, $lastname, $email, $phone, $wcfm_product_author): int {
         $username = Uuid::uuid4()->toString();
         $password = bin2hex(openssl_random_pseudo_bytes(10)); 
 
@@ -433,6 +438,7 @@ class Verena_REST_Book_Controller {
         update_user_meta( $user_id, 'first_name', $firstname);
         update_user_meta( $user_id, 'last_name', $lastname);
         update_user_meta( $user_id, 'billing_email', $email);
+        update_user_meta( $user_id, 'billing_phone', $phone);
         update_user_meta( $user_id, 'hide_admin_area', 1);
         update_user_meta( $user_id, 'wp_capabilities', ['customer' => true]);
 
@@ -453,97 +459,138 @@ class Verena_REST_Book_Controller {
      * @return array $scheduled_data
      */
     static function get_available_dates($min_date, $max_date, $vendor, $products) {
-        $scheduled_data = array_values(
-			array_map(
-				function( $appointable_product ) use ( $min_date, $max_date, $staff_ids, $get_past_times, $timezone, $vendor ) {
-					if ( empty( $min_date ) ) {
-						// Determine a min and max date
-						$min_date = strtotime( 'today' );
-					}
+        $unavailable_timeslots = [];
 
-					if ( empty( $max_date ) ) {
-						$max_date = strtotime( 'tomorrow' );
-					}
+        foreach($products as $appointable_product) {
+            if ( empty( $min_date ) ) {
+                // Determine a min and max date
+                $min_date = strtotime( 'today' );
+            }
 
-					$product_staff = $appointable_product->get_staff_ids() ?: [$vendor->ID];
-					$duration      = $appointable_product->get_duration();
-					$duration_unit = $appointable_product->get_duration_unit();
-                    $metadata = array_map(fn($item) => $item[0], get_post_meta($appointable_product->get_id()));
+            if ( empty( $max_date ) ) {
+                $max_date = strtotime( 'tomorrow' );
+            }
 
-					$availability  = [];
+            $product_staff = $appointable_product->get_staff_ids() ?: [$vendor->ID];
+            $duration      = $appointable_product->get_duration();
+            $duration_unit = $appointable_product->get_duration_unit();
+            $metadata = array_map(fn($item) => $item[0], get_post_meta($appointable_product->get_id()));
 
-					$staff = empty( $product_staff ) ? [ 0 ] : $product_staff;
-					if ( ! empty( $staff_ids ) ) {
-						$staff = array_intersect( $staff, $staff_ids );
-					}
+            $availability  = [];
 
-					// Get slots for days before and after, which accounts for timezone differences.
-					$start_date = strtotime( '-1 day', $min_date );
-					$end_date   = strtotime( '+1 day', $max_date );
+            $staff = empty( $product_staff ) ? [ 0 ] : $product_staff;
+            if ( ! empty( $staff_ids ) ) {
+                $staff = array_intersect( $staff, $staff_ids );
+            }
 
-					foreach ( $staff as $staff_id ) {
-						// Get appointments.
-						$appointments          = [];
-						$existing_appointments = \WC_Appointment_Data_Store::get_all_existing_appointments( $appointable_product, $start_date, $end_date, $staff_id );
-						if ( ! empty( $existing_appointments ) ) {
-							foreach ( $existing_appointments as $existing_appointment ) {
-								#print '<pre>'; print_r( $existing_appointment->get_id() ); print '</pre>';
-								$appointments[] = [
-									'get_staff_ids'  => $existing_appointment->get_staff_ids(),
-									'get_start'      => $existing_appointment->get_start(),
-									'get_end'        => $existing_appointment->get_end(),
-									'get_qty'        => $existing_appointment->get_qty(),
-									'get_id'         => $existing_appointment->get_id(),
-									'get_product_id' => $existing_appointment->get_product_id(),
-									'is_all_day'     => $existing_appointment->is_all_day(),
-								];
-							}
-						}
-						$slots           = $appointable_product->get_slots_in_range( $start_date, $end_date, [], $staff_id, [], $get_past_times );
-						$available_slots = $appointable_product->get_time_slots(
-							[
-								'slots'            => $slots,
-								'staff_id'         => $staff_id,
-								'from'             => $start_date,
-								'to'               => $end_date,
-								'appointments'     => $appointments,
-								'include_sold_out' => true,
-							]
-						);
+            // Get slots for days before and after, which accounts for timezone differences.
+            $start_date = strtotime( '-1 day', $min_date );
+            $end_date   = strtotime( '+1 day', $max_date );
 
-						foreach ( $available_slots as $timestamp => $data ) {
-							// Filter slots outside of timerange.
-							if ( $timestamp < $min_date || $timestamp >= $max_date ) {
-								continue;
-							}
+            foreach ( $staff as $staff_id ) {
+                // Get appointments.
+                $appointments          = [];
 
-							unset( $data['staff'] );
+                $existing_appointments = \WC_Appointment_Data_Store::get_all_existing_appointments( $appointable_product, $start_date, $end_date, $staff_id );
 
-							$availability[] = [
-								self::DATE          => self::get_time( $timestamp, $timezone ),
-								self::AVAILABLE     => (bool)$data['available']							
-                            ];
-						}
-					}
+                if ( ! empty( $existing_appointments ) ) {
+                    foreach ( $existing_appointments as $existing_appointment ) {
+                        #print '<pre>'; print_r( $existing_appointment->get_id() ); print '</pre>';
+                        $appointments[] = [
+                            'get_staff_ids'  => $existing_appointment->get_staff_ids(),
+                            'get_start'      => $existing_appointment->get_start(),
+                            'get_end'        => $existing_appointment->get_end(),
+                            'get_qty'        => $existing_appointment->get_qty(),
+                            'get_id'         => $existing_appointment->get_id(),
+                            'get_product_id' => $existing_appointment->get_product_id(),
+                            'is_all_day'     => $existing_appointment->is_all_day(),
+                        ];
+                    }
+                }
+                $slots           = $appointable_product->get_slots_in_range( $start_date, $end_date, [], $staff_id, [], $get_past_times );
+                $available_slots = $appointable_product->get_time_slots(
+                    [
+                        'slots'            => $slots,
+                        'staff_id'         => $staff_id,
+                        'from'             => $start_date,
+                        'to'               => $end_date,
+                        'appointments'     => $appointments,
+                        'include_sold_out' => true,
+                    ]
+                );
 
-					$data = [
-						'product_id'    => $appointable_product->get_id(),
-						'product_title' => $appointable_product->get_title(),
-                        'location'      => $metadata['product_address'],
-                        'online'        => (bool)$metadata['_online'] ?? false,
-                        'product_duration' => $duration,
-                        'product_duration_unit' => $duration_unit,
-                        'price'         => (int)$metadata['_price'],
-						'availability'  => $availability,
-					];
+                foreach ( $available_slots as $timestamp => $data ) {                           
+                    // Filter slots outside of timerange.
+                    if ( $timestamp < $min_date || $timestamp >= $max_date ) {
+                        continue;
+                    }
 
-					return $data;
-				},
-				$products
-			)
-		);
+                    unset( $data['staff'] );
 
-        return $scheduled_data;
+                    $availability[] = [
+                        self::DATE          => self::get_time( $timestamp, $timezone ),
+                        self::AVAILABLE     => (bool)$data['available'],
+                        'timestamp'         => $timestamp
+                    ];
+
+                    if(!$data['available']) {
+                        $unavailable_timeslots[] = ['start' => $timestamp, 'end' => $timestamp + $duration * 60];
+                    } 
+                }
+            }
+
+            $scheduled_data[] = [
+                'product_id'    => $appointable_product->get_id(),
+                'product_title' => $appointable_product->get_title(),
+                'location'      => $metadata['product_address'],
+                'online'        => (bool)$metadata['_online'] ?? false,
+                'product_duration' => $duration,
+                'product_duration_unit' => $duration_unit,
+                'price'         => (int)$metadata['_price'],
+                'availability'  => $availability,
+            ];
+
+        }
+
+        $final_scheduled_data = [];
+
+        // TODO: optimize by using WC_Appointments_Availability_Data_Store::get_events_in_date_range() instead
+        $staff_availability = \WC_Appointments_Availability_Data_Store::get_staff_availability($vendor->ID);
+
+        // Check if another appointment has been booked for the same staff OR if the staff is unavailable
+        foreach($scheduled_data as $data) {
+            $duration = (double) $data['product_duration'];
+
+            foreach($data['availability'] as $key => $availability) {
+                $timestamp = $availability['timestamp'];
+
+                foreach($unavailable_timeslots as $unavailable_timeslot) {
+                    if( $timestamp < $unavailable_timeslot['end'] && $timestamp + $duration * 60 > $unavailable_timeslot['start']) {
+                        $data['availability'][$key]['a'] = false;
+                    }
+                }
+
+                // If available, check the staff's availability
+                if( $data['availability'][$key]['a'] ) {
+                    foreach($staff_availability as $unavailable_timeslot) {                        
+                        if( !($unavailable_timeslot['range_type'] === 'custom:daterange') ) {
+                            continue;
+                        }
+
+                        $start =  \DateTime::createFromFormat('Y-m-d H:i', $unavailable_timeslot['from_date'] . ' ' . $unavailable_timeslot['from_range']);
+                        $end = \DateTime::createFromFormat('Y-m-d H:i', $unavailable_timeslot['to_date'] . ' ' . $unavailable_timeslot['to_range']);
+
+                        if( $timestamp < $end->getTimestamp() && $timestamp + $duration * 60 > $start->getTimestamp()) {
+                            $data['availability'][$key]['a'] = false;
+                        }
+                    }
+                }
+            }
+
+            $final_scheduled_data[] = $data;
+        }
+
+        return $final_scheduled_data;
     }
 
     /**

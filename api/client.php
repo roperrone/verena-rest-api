@@ -169,12 +169,6 @@ class Verena_REST_Client_Controller {
 
         $success = $user_id > 0;
 
-        if ( $success ) {
-            \Verena_Notifications_Helper::add_notification(
-                sprintf("%s %s. vient d'être ajouté comme client", ucwords($data['firstname']), $data['lastname'][0])
-            );
-        }
-
         return rest_ensure_response(['success' => $success]);
     }
 
@@ -256,12 +250,6 @@ class Verena_REST_Client_Controller {
 
         // update the account
         $success = update_user_meta( $client->ID, 'is_deleted', true);
-
-        if ($success) {
-            \Verena_Notifications_Helper::add_notification(
-                sprintf("Une fiche client (#%s) vient d'être supprimée", $data['clientId'])
-            );
-        }
         
         // TODO: Only allow deletion if no order is attached to this client
         return rest_ensure_response( ['success' => $success] );
